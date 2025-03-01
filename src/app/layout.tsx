@@ -1,5 +1,5 @@
 import { Montserrat, Playfair_Display } from 'next/font/google'
-import Footer from '@/components/layout/footer'
+import Footer from '@/components/layout/Footer'
 import './globals.css'
 import React from "react";
 
@@ -19,7 +19,7 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="en">
+        <html lang="en" id="root">
         <body className={`${montserrat.variable} ${playfair.variable} font-sans`}>
         {children}
         <Footer />
