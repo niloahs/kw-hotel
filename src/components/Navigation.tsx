@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import AuthModal from '@/components/modals/AuthModal';
 import { getCookie, deleteCookie } from 'cookies-next';
@@ -11,6 +12,10 @@ export default function Navigation() {
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const router = useRouter();
+    const pathname = usePathname();
+
+    // Determine if we're on the homepage
+    const isHomePage = pathname === '/';
 
     useEffect(() => {
         const handleScroll = () => {
@@ -21,12 +26,23 @@ export default function Navigation() {
         const token = getCookie('kw_auth_token');
         setIsLoggedIn(!!token);
 
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+        // Only add scroll listener on homepage
+        if (isHomePage) {
+            window.addEventListener('scroll', handleScroll);
+            return () => window.removeEventListener('scroll', handleScroll);
+        } else {
+            // Always show solid background on other pages
+            setIsScrolled(true);
+        }
+    }, [isHomePage]);
 
     const scrollToSection = (id: string) => {
-        document.getElementById(id)?.scrollIntoView({behavior: 'smooth'});
+        if (isHomePage) {
+            document.getElementById(id)?.scrollIntoView({behavior: 'smooth'});
+        } else {
+            // If not on homepage, navigate to homepage and then scroll
+            router.push(`/#${id}`);
+        }
     };
 
     const handleAuthSuccess = () => {
@@ -40,29 +56,23 @@ export default function Navigation() {
             setIsLoggedIn(false);
             router.refresh();
         } catch (error) {
-            console.log(error)
             console.error('Logout failed');
         }
     };
 
     return (
         <nav className={`fixed w-full z-50 transition-all duration-300 ${
-            isScrolled ? 'bg-white shadow-md' : 'bg-transparent'
+            isScrolled ? 'bg-white shadow-md text-gray-900' : 'bg-transparent text-white'
         }`}>
             <div className="container mx-auto px-4 py-4">
                 <div className="flex items-center justify-between">
-                    <button
-                        onClick={() => scrollToSection('hero')}
-                        className={`font-display text-2xl ${
-                            isScrolled ? 'text-gray-900' : 'text-white'
-                        }`}
-                    >
+                    <Link href="/" className={`font-display text-2xl`}>
                         King William Hotel
-                    </button>
+                    </Link>
 
                     <div className="hidden md:flex items-center space-x-8">
-                        {/* Navigation links */}
-                        {[
+                        {/* Navigation links - only show these on homepage */}
+                        {isHomePage && [
                             {title: 'Heritage', id: 'heritage'},
                             {title: 'Accommodations', id: 'accommodations'},
                             {title: 'Experience', id: 'experience'},
@@ -71,11 +81,18 @@ export default function Navigation() {
                             <button
                                 key={item.id}
                                 onClick={() => scrollToSection(item.id)}
-                                className={`${isScrolled ? 'text-gray-600' : 'text-white'} hover:opacity-80`}
+                                className={`hover:opacity-80`}
                             >
                                 {item.title}
                             </button>
                         ))}
+
+                        {/* Show reservation link on non-homepages */}
+                        {!isHomePage && (
+                            <Link href="/reservations" className={isScrolled ? 'text-gray-600' : 'text-white'}>
+                                Reservations
+                            </Link>
+                        )}
 
                         {/* Always show Book Now button */}
                         <Button
@@ -90,7 +107,6 @@ export default function Navigation() {
                         {isLoggedIn ? (
                             <Button
                                 variant="ghost"
-                                className={isScrolled ? 'text-gray-600' : 'text-white'}
                                 onClick={handleLogout}
                             >
                                 Logout
@@ -98,7 +114,6 @@ export default function Navigation() {
                         ) : (
                             <Button
                                 variant="ghost"
-                                className={isScrolled ? 'text-gray-600' : 'text-white'}
                                 onClick={() => setIsAuthModalOpen(true)}
                             >
                                 Login

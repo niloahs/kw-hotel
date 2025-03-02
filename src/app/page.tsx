@@ -1,12 +1,34 @@
-import { Button } from '@/components/ui/button'
-import Image from 'next/image'
-import Navigation from '@/components/navigation'
-import { RevealOnScroll } from '@/components/animations/reveal'
+'use client';
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import Image from 'next/image';
+import { RevealOnScroll } from '@/components/animations/Reveal';
+import AuthModal from '@/components/modals/AuthModal';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const router = useRouter();
+
+    const handleReservationClick = () => {
+        router.push('/reservations');
+    };
+
+    const handleAuthSuccess = () => {
+        router.push('/reservations');
+    };
+
     return (
         <>
-            <Navigation />
+
+            {/* Authentication Modal */}
+            <AuthModal
+                isOpen={isAuthModalOpen}
+                onOpenChangeAction={setIsAuthModalOpen}
+                onSuccess={handleAuthSuccess}
+            />
+
 
             {/* Hero Section */}
             <section id="hero" className="relative h-screen">
@@ -35,6 +57,7 @@ export default function Home() {
                         <Button
                             size="lg"
                             className="bg-white/90 backdrop-blur-sm text-black hover:bg-white transition-all duration-300"
+                            onClick={handleReservationClick}
                         >
                             Reserve Your Stay
                         </Button>
@@ -61,15 +84,12 @@ export default function Home() {
                                 <h2 className="font-display text-4xl mb-6">A Century of
                                                                            Hospitality</h2>
                                 <p className="text-gray-700 mb-6">
-                                    Built in 1923, the King William Hotel stands as a testament
-                                    to
-                                    timeless elegance in the heart of Ontario&#39;s most
-                                    cherished
-                                    tourist destination. Recently restored to its original
-                                    splendor, our
-                                    rooms and common areas capture the essence of early
-                                    20th-century
-                                    luxury while providing modern comfort and convenience.
+                                    Built in 1923, the King William Hotel stands as a testament to
+                                    timeless elegance in the heart of Ontario&#39;s most cherished
+                                    tourist destination. Recently restored to its original splendor,
+                                    our rooms and common areas capture the essence of early
+                                    20th-century luxury while providing modern comfort and
+                                    convenience.
                                 </p>
                             </div>
                         </RevealOnScroll>
@@ -147,10 +167,8 @@ export default function Home() {
                                     <p className="text-gray-700 mb-6">
                                         From early morning breakfast to late evening dining, our
                                         restaurant offers an exceptional culinary experience. Enjoy
-                                        the
-                                        convenience of charging any meal directly to your room,
-                                        allowing
-                                        you to dine at your leisure.
+                                        the convenience of charging any meal directly to your room,
+                                        allowing you to dine at your leisure.
                                     </p>
                                 </div>
                             </div>
@@ -173,8 +191,8 @@ export default function Home() {
                                     <p className="text-gray-700 mb-6">
                                         Our attentive staff provides a range of services including
                                         dry-cleaning, transportation arrangements, and special
-                                        requests.
-                                        All services can be conveniently billed to your room.
+                                        requests. All services can be conveniently billed to your
+                                        room.
                                     </p>
                                 </div>
                             </div>
@@ -193,10 +211,12 @@ export default function Home() {
                             King William Hotel offers the perfect base for exploring the
                             region&#39;s attractions.
                         </p>
-                        <Button size="lg">Make a Reservation</Button>
+                        <Button size="lg" onClick={handleReservationClick}>
+                            Make a Reservation
+                        </Button>
                     </div>
                 </div>
             </section>
         </>
-    )
+    );
 }
