@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import axios from 'axios';
-import { setCookie } from 'cookies-next';
 import {
     Form,
     FormControl,
@@ -18,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { LoginFormData, loginSchema } from "@/lib/validation-schemas";
+import { useAuth } from "@/context/AuthContext";
 
 interface LoginFormProps {
     userType: 'guest' | 'staff';
@@ -26,6 +26,7 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({userType, onSuccess}: LoginFormProps) {
+    const { login } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -42,13 +43,8 @@ export default function LoginForm({userType, onSuccess}: LoginFormProps) {
         setError('');
 
         try {
-            const response = await axios.post('/api/auth/login', {
-                ...data,
-                userType
-            });
-
-            // Store the token in a cookie for client-side access
-            setCookie('kw_auth_token', response.data.token);
+            // Login function from AuthContext
+            await login(data.email, data.password, userType);
 
             // Call success callback
             onSuccess?.();

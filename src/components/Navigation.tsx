@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import AuthModal from '@/components/modals/AuthModal';
-import { getCookie, deleteCookie } from 'cookies-next';
+import { useAuth } from "@/context/AuthContext";
 
 export default function Navigation() {
-    const [isScrolled, setIsScrolled] = useState(false);
+    const {isAuthenticated, user, logout} = useAuth();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
 
@@ -21,10 +21,6 @@ export default function Navigation() {
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 50);
         };
-
-        // Check login status
-        const token = getCookie('kw_auth_token');
-        setIsLoggedIn(!!token);
 
         // Only add scroll listener on homepage
         if (isHomePage) {
@@ -46,16 +42,15 @@ export default function Navigation() {
     };
 
     const handleAuthSuccess = () => {
-        setIsLoggedIn(true);
+        setIsAuthModalOpen(false);
     };
 
     const handleLogout = async () => {
         try {
-            await fetch('/api/auth/logout', {method: 'POST'});
-            deleteCookie('kw_auth_token');
-            setIsLoggedIn(false);
+            await logout();
             router.refresh();
         } catch (error) {
+            console.log(error);
             console.error('Logout failed');
         }
     };
@@ -89,12 +84,13 @@ export default function Navigation() {
 
                         {/* Show reservation link on non-homepages */}
                         {!isHomePage && (
-                            <Link href="/reservations" className={isScrolled ? 'text-gray-600' : 'text-white'}>
+                            <Link href="/reservations"
+                                  className={isScrolled ? 'text-gray-600' : 'text-white'}>
                                 Reservations
                             </Link>
                         )}
 
-                        {/* Always show Book Now button */}
+                        {/* Book Now button */}
                         <Button
                             variant={isScrolled ? "default" : "outline"}
                             className={isScrolled ? '' : 'text-black border-white'}
@@ -103,13 +99,21 @@ export default function Navigation() {
                             Book Now
                         </Button>
 
+                        {/* Show My Account link when authenticated */}
+                        {isAuthenticated && (
+                            <Link href="/account"
+                                  className={isScrolled ? 'text-gray-600' : 'text-white'}>
+                                My Account
+                            </Link>
+                        )}
+
                         {/* Show Login or Logout based on auth state */}
-                        {isLoggedIn ? (
+                        {isAuthenticated ? (
                             <Button
                                 variant="ghost"
                                 onClick={handleLogout}
                             >
-                                Logout
+                                Logout {user && `(${user.firstName})`}
                             </Button>
                         ) : (
                             <Button

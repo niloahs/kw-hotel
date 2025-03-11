@@ -5,7 +5,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
-import { setCookie } from 'cookies-next';
 
 import {
     Form,
@@ -30,10 +29,12 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { GuestDetailsFormData, guestDetailsSchema } from "@/lib/validation-schemas";
+import { useAuth } from '@/context/AuthContext';
 
 export default function GuestDetailsForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const {setUserAndToken} = useAuth();
 
     const checkIn = searchParams.get('checkIn');
     const checkOut = searchParams.get('checkOut');
@@ -55,6 +56,7 @@ export default function GuestDetailsForm() {
     });
 
     const createAccount = form.watch('createAccount');
+
 
     const onSubmit = async (data: GuestDetailsFormData) => {
         if (!checkIn || !checkOut || !roomId) {
@@ -81,9 +83,9 @@ export default function GuestDetailsForm() {
                 }
             });
 
-            // If token is returned (user created an account), store it
-            if (data.createAccount && response.data.token) {
-                setCookie('kw_auth_token', response.data.token);
+            // If token and user data are returned (user created an account), set in auth context
+            if (data.createAccount && response.data.token && response.data.user) {
+                setUserAndToken(response.data.user, response.data.token);
             }
 
             // Redirect to confirmation page
