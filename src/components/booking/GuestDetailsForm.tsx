@@ -172,8 +172,6 @@ export default function GuestDetailsForm() {
                             )}
                         />
 
-                        <Separator />
-
                         <FormField
                             control={form.control}
                             name="createAccount"

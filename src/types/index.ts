@@ -45,9 +45,11 @@ export interface Reservation {
     totalAmount: number;
     paymentStatus: 'Paid' | 'Unpaid';
     paymentMethod: string;
+    confirmationCode?: string;
     guestName?: string;
     roomNumber?: string;
     roomType?: string;
+    isClaimed?: boolean;
 }
 
 // Service Types

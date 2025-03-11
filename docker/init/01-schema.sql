@@ -99,6 +99,8 @@ CREATE TABLE reservation
     payment_status VARCHAR(10)    NOT NULL CHECK (payment_status IN ('Paid', 'Unpaid')),
     payment_method VARCHAR(12)    NOT NULL CHECK (payment_method IN
                                                   ('Credit Card', 'Debit Card', 'Cash', 'Cheque')),
+    confirmation_code VARCHAR(10) UNIQUE,
+    is_claimed BOOLEAN DEFAULT FALSE,
     CHECK (check_out_date > check_in_date)
 );
 

@@ -22,9 +22,10 @@ import { useAuth } from "@/context/AuthContext";
 interface RegisterFormProps {
     onSuccess?: () => void;
     onLoginClick?: () => void;
+    reservationId?: number;
 }
 
-export default function RegisterForm({onSuccess}: RegisterFormProps) {
+export default function RegisterForm({onSuccess, onLoginClick, reservationId}: RegisterFormProps) {
     const { setUserAndToken } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -46,12 +47,14 @@ export default function RegisterForm({onSuccess}: RegisterFormProps) {
         setError('');
 
         try {
+            console.log("Registration with reservationId:", reservationId);
             const response = await axios.post('/api/auth/register', {
                 firstName: data.firstName,
                 lastName: data.lastName,
                 email: data.email,
                 phone: data.phone,
-                password: data.password
+                password: data.password,
+                reservationId: reservationId
             });
 
             // Auto-sign in by using the returned token and user data

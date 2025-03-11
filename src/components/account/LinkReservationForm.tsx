@@ -19,7 +19,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 
 const linkReservationSchema = z.object({
-    reservationId: z.string().min(1, 'Reservation code is required'),
+    confirmationCode: z.string().min(1, 'Confirmation code is required'),
     email: z.string().email('Please enter a valid email')
 });
 
@@ -37,7 +37,7 @@ export default function LinkReservationForm({onSuccess}: LinkReservationFormProp
     const form = useForm<LinkReservationFormData>({
         resolver: zodResolver(linkReservationSchema),
         defaultValues: {
-            reservationId: '',
+            confirmationCode: '',
             email: ''
         }
     });
@@ -67,13 +67,13 @@ export default function LinkReservationForm({onSuccess}: LinkReservationFormProp
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                     control={form.control}
-                    name="reservationId"
+                    name="confirmationCode"
                     render={({field}) => (
                         <FormItem>
-                            <FormLabel>Reservation Code</FormLabel>
+                            <FormLabel>Confirmation Code</FormLabel>
                             <FormControl>
                                 <Input
-                                    placeholder="Enter your reservation code"
+                                    placeholder="Enter your confirmation code"
                                     {...field}
                                     disabled={isLoading}
                                 />

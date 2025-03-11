@@ -4,7 +4,7 @@ import { createApiError, handleApiError } from "@/lib/api-utils";
 
 export async function GET(
     request: Request,
-    { params }: { params: { id: string } }
+    {params}: { params: { id: string } }
 ) {
     try {
         const id = parseInt(params.id);

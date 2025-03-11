@@ -23,7 +23,7 @@ export default function AccountPage() {
     }
 
     if (!isAuthenticated) {
-        return null; // Will redirect in useEffect
+        return null;
     }
 
     return (

@@ -3,6 +3,7 @@ import db from "@/lib/db";
 import { calculateNights } from "@/lib/utils";
 import { hash } from "bcryptjs";
 import { generateToken, UserType } from "@/lib/auth";
+import { randomUUID } from 'crypto';
 
 export async function POST(request: Request) {
     try {
@@ -113,17 +114,22 @@ export async function POST(request: Request) {
         const nights = calculateNights(checkInDate, checkOutDate);
         const totalAmount = adjustedRate * nights;
 
+        // Generate a unique confirmation code
+        const confirmationCode = randomUUID().substring(0, 8).toUpperCase();
+
         // Create reservation (using a default staff ID for now)
         const staffId = 1;
 
         const reservationResult = await db.query(`
             INSERT INTO reservation (guest_id, room_id, staff_id, check_in_date, check_out_date,
-                                     status, total_amount, payment_status, payment_method)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            RETURNING reservation_id
+                                     status, total_amount, payment_status, payment_method,
+                                     confirmation_code, is_claimed)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            RETURNING reservation_id, confirmation_code
         `, [
             guestId, roomId, staffId, checkInDate, checkOutDate,
-            'Confirmed', totalAmount, 'Unpaid', 'Credit Card'
+            'Confirmed', totalAmount, 'Unpaid', 'Credit Card', confirmationCode,
+            createAccount
         ]);
 
         const reservationId = reservationResult.rows[0].reservation_id;
@@ -138,6 +144,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
             success: true,
             reservationId,
+            confirmationCode: createAccount ? null : confirmationCode,
             totalAmount,
             token,
             user: userData

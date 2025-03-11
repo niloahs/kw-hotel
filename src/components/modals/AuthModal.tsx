@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -17,6 +17,7 @@ interface AuthModalProps {
     onOpenChangeAction: (open: boolean) => void;
     onSuccess?: () => void;
     initialView?: 'login' | 'register';
+    reservationId?: number;
 }
 
 
@@ -24,7 +25,8 @@ export default function AuthModal({
                                       isOpen,
                                       onOpenChangeAction,
                                       onSuccess,
-                                      initialView = 'login'
+                                      initialView = 'login',
+                                      reservationId
                                   }: AuthModalProps) {
     const [activeTab, setActiveTab] = useState<string>(initialView);
 
@@ -70,6 +72,7 @@ export default function AuthModal({
                         <RegisterForm
                             onSuccess={handleSuccess}
                             onLoginClick={() => setActiveTab('login')}
+                            reservationId={reservationId}
                         />
                     </TabsContent>
                 </Tabs>

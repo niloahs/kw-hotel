@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import AuthModal from '@/components/modals/AuthModal';
 import { useAuth } from "@/context/AuthContext";
+import { Separator } from "@/components/ui/separator";
 
 export default function Navigation() {
     const {isAuthenticated, user, logout} = useAuth();
@@ -82,14 +83,6 @@ export default function Navigation() {
                             </button>
                         ))}
 
-                        {/* Show reservation link on non-homepages */}
-                        {!isHomePage && (
-                            <Link href="/reservations"
-                                  className={isScrolled ? 'text-gray-600' : 'text-white'}>
-                                Reservations
-                            </Link>
-                        )}
-
                         {/* Book Now button */}
                         <Button
                             variant={isScrolled ? "default" : "outline"}
@@ -98,6 +91,8 @@ export default function Navigation() {
                         >
                             Book Now
                         </Button>
+
+                        <Separator orientation="vertical" className="h-6" />
 
                         {/* Show My Account link when authenticated */}
                         {isAuthenticated && (
