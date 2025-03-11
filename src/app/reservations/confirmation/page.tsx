@@ -14,7 +14,7 @@ import AuthModal from '@/components/modals/AuthModal';
 import { ClipboardCopy } from 'lucide-react';
 
 export default function ConfirmationPage() {
-    const { isAuthenticated } = useAuth();
+    const {isAuthenticated} = useAuth();
     const searchParams = useSearchParams();
     const reservationId = searchParams.get('id');
     const [reservation, setReservation] = useState<Reservation | null>(null);
@@ -105,7 +105,8 @@ export default function ConfirmationPage() {
                             <CardTitle>Booking Confirmation #{reservationId}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <p className="text-green-600 font-bold">Your reservation is confirmed!</p>
+                            <p className="text-green-600 font-bold">Your reservation is confirmed!
+                            </p>
 
                             <div className="border-t border-b py-4 my-4">
                                 <div className="grid grid-cols-2 gap-4">
@@ -122,7 +123,8 @@ export default function ConfirmationPage() {
 
                             <div>
                                 <p className="text-gray-500">Room</p>
-                                <p className="font-semibold">{reservation.roomType} - Room {reservation.roomNumber}</p>
+                                <p className="font-semibold">{reservation.roomType} -
+                                                                                    Room {reservation.roomNumber}</p>
                             </div>
 
                             <div>
@@ -133,10 +135,14 @@ export default function ConfirmationPage() {
                             {/* Reservation Code Section */}
                             <div className="border-t pt-4 mt-6">
                                 <div className="bg-blue-50 p-4 rounded-md">
-                                    <h3 className="font-semibold text-blue-800 mb-2">Confirmation Code</h3>
-                                    <p className="mb-2">Please save your confirmation code to access your reservation later:</p>
+                                    <h3 className="font-semibold text-blue-800 mb-2">Confirmation
+                                                                                     Code</h3>
+                                    <p className="mb-2">Please save your confirmation code to access
+                                                        your reservation later:
+                                    </p>
                                     <div className="relative">
-                                        <div className="font-mono bg-white p-3 border rounded text-center text-lg mb-2">
+                                        <div
+                                            className="font-mono bg-white p-3 border rounded text-center text-lg mb-2">
                                             {reservationId}
                                         </div>
                                         <Button
@@ -148,7 +154,8 @@ export default function ConfirmationPage() {
                                             <ClipboardCopy size={16} />
                                         </Button>
                                         {codeCopied && (
-                                            <p className="text-green-600 text-sm text-center">Code copied!</p>
+                                            <p className="text-green-600 text-sm text-center">Code
+                                                                                              copied!</p>
                                         )}
                                     </div>
                                 </div>
@@ -157,8 +164,11 @@ export default function ConfirmationPage() {
                             {/* Account Creation Section - non-authenticated users */}
                             {!isAuthenticated && (
                                 <div className="bg-amber-50 p-4 rounded-md mt-4">
-                                    <h3 className="font-semibold text-amber-800 mb-2">Create an Account</h3>
-                                    <p className="mb-3">With an account, you can easily manage your reservation and take advantage of member benefits.</p>
+                                    <h3 className="font-semibold text-amber-800 mb-2">Create an
+                                                                                      Account</h3>
+                                    <p className="mb-3">With an account, you can easily manage your
+                                                        reservation.
+                                    </p>
                                     <Button
                                         onClick={handleCreateAccount}
                                         className="w-full bg-amber-600 hover:bg-amber-700"
