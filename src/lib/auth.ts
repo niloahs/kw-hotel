@@ -1,5 +1,5 @@
-import { compare } from 'bcryptjs';
-import { sign, verify, JwtPayload } from 'jsonwebtoken';
+import { compare, hash } from 'bcryptjs';
+import { JwtPayload, sign, verify } from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import db from './db';
 
@@ -132,10 +132,11 @@ export async function createOrUpdateGuestAccount(
         }
 
         // Create new guest
-        const passwordHash = await compare(password, '');
+        const passwordHash = await hash(password, 10);
         const result = await db.query(
-            `INSERT INTO guest (first_name, last_name, email, phone, password_hash, is_account_created)
-             VALUES ($1, $2, $3, $4, $5, TRUE) 
+            `INSERT INTO guest (first_name, last_name, email, phone, password_hash,
+                                is_account_created)
+             VALUES ($1, $2, $3, $4, $5, TRUE)
              RETURNING guest_id`,
             [firstName, lastName, email, phone || null, passwordHash]
         );
