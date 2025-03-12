@@ -161,9 +161,10 @@ export default function ConfirmationPage() {
                             ) : (
                                 <div className="border-t pt-4 mt-6">
                                     <div className="bg-green-50 p-4 rounded-md">
-                                        <h3 className="font-semibold text-green-800 mb-2">Account
-                                                                                          Created</h3>
-                                        <p>Your reservation is linked to your account. You can view
+                                        <h3 className="font-semibold text-green-800 mb-2">Reservation
+                                                                                          Saved</h3>
+                                        <p>Your reservation has been linked to your account. You can
+                                           view
                                            and manage your reservations from your account page.
                                         </p>
                                     </div>

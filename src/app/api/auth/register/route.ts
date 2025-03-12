@@ -1,12 +1,10 @@
-// src/app/api/auth/register/route.ts
 import { NextResponse } from 'next/server';
 import auth from '@/lib/auth';
 import { hash } from 'bcryptjs';
 import db from '@/lib/db';
 
-// Type guard for PostgreSQL errors
-function isPostgresError(error: unknown): error is { code: string } {
-    return error !== null && typeof error === 'object' && 'code' in error;
+function errorResponse(message: string, status: number) {
+    return NextResponse.json({message}, {status});
 }
 
 export async function POST(request: Request) {
@@ -17,11 +15,7 @@ export async function POST(request: Request) {
         // Convert reservationId to number if provided
         const reservationIdNum = reservationId ? parseInt(String(reservationId), 10) : null;
 
-        // Detailed logging
-        console.log(`Registration attempt: email=${email}, 
-            rawReservationId=${reservationId} (${typeof reservationId}), 
-            parsed=${reservationIdNum}, 
-            isValidNumber=${reservationIdNum !== null && !isNaN(reservationIdNum)}`);
+        console.log(`Registration attempt: email=${email}, reservationId=${reservationId}`);
 
         if (!firstName || !lastName || !email || !password) {
             return NextResponse.json(
@@ -35,7 +29,6 @@ export async function POST(request: Request) {
             'SELECT guest_id, is_account_created FROM guest WHERE email = $1',
             [email]
         );
-        console.log(`Found existing guest: ${existingGuest.rowCount > 0}, isAccount=${existingGuest.rowCount > 0 ? existingGuest.rows[0].is_account_created : 'N/A'}`);
 
         let guestId;
         const passwordHash = await hash(password, 10);
@@ -51,7 +44,6 @@ export async function POST(request: Request) {
 
             // Otherwise, update the existing guest record to create an account
             guestId = existingGuest.rows[0].guest_id;
-            console.log(`Updating existing guest with ID: ${guestId}`);
 
             await db.query(
                 `UPDATE guest
@@ -64,47 +56,28 @@ export async function POST(request: Request) {
                 [firstName, lastName, phone || null, passwordHash, guestId]
             );
 
-            // Mark all reservations for this guest as claimed
-            const claimResult = await db.query(
-                `UPDATE reservation
-                 SET is_claimed = TRUE
-                 WHERE guest_id = $1
-                 RETURNING reservation_id`,
-                [guestId]
-            );
-            console.log(`Claimed ${claimResult.rowCount} existing reservations for guest ${guestId}`);
-
-            // If a specific reservationId was provided, ensure it's claimed too
+            // ONLY claim the specific reservation if provided via reservationId
             if (reservationIdNum !== null && !isNaN(reservationIdNum)) {
-                console.log(`Checking specific reservation ${reservationIdNum}`);
-
-                // Check if the reservation exists
+                // Verify the reservation belongs to this guest
                 const reservationCheck = await db.query(
                     `SELECT r.reservation_id
                      FROM reservation r
-                     WHERE r.reservation_id = $1`,
-                    [reservationIdNum]
+                     WHERE r.reservation_id = $1
+                       AND r.guest_id = $2`,
+                    [reservationIdNum, guestId]
                 );
 
                 if (reservationCheck.rowCount > 0) {
-                    console.log(`Transferring reservation ${reservationIdNum} to guest ${guestId}`);
-
                     await db.query(
                         `UPDATE reservation
-                         SET guest_id   = $1,
-                             is_claimed = TRUE
-                         WHERE reservation_id = $2`,
-                        [guestId, reservationIdNum]
+                         SET is_claimed = TRUE
+                         WHERE reservation_id = $1`,
+                        [reservationIdNum]
                     );
-                } else {
-                    console.log(`Reservation ${reservationIdNum} not found in database`);
                 }
-            } else if (reservationId) {
-                console.log(`Invalid reservation ID format: ${reservationId}`);
             }
         } else {
             // No existing guest, create a new one with account
-            console.log(`Creating new guest account with email ${email}`);
             const newAccount = await db.query(
                 `INSERT INTO guest (first_name, last_name, email, phone, password_hash,
                                     is_account_created)
@@ -114,13 +87,10 @@ export async function POST(request: Request) {
             );
 
             guestId = newAccount.rows[0].guest_id;
-            console.log(`New guest created with ID: ${guestId}`);
 
-            // If a specific reservation ID was provided, check if we need to transfer it
+            // If a specific reservation ID was provided, we should require a code
+            // but for simplicity in this project, we'll just check if the reservation exists
             if (reservationIdNum !== null && !isNaN(reservationIdNum)) {
-                console.log(`Checking reservation ${reservationIdNum} for new account`);
-
-                // Get the reservation
                 const reservationResult = await db.query(
                     `SELECT r.reservation_id, r.guest_id
                      FROM reservation r
@@ -129,9 +99,6 @@ export async function POST(request: Request) {
                 );
 
                 if (reservationResult.rowCount > 0) {
-                    console.log(`Found reservation ${reservationIdNum}. Transferring to new guest ${guestId}`);
-
-                    // Transfer ownership unconditionally when coming from confirmation page
                     await db.query(
                         `UPDATE reservation
                          SET guest_id   = $1,
@@ -139,16 +106,11 @@ export async function POST(request: Request) {
                          WHERE reservation_id = $2`,
                         [guestId, reservationIdNum]
                     );
-                } else {
-                    console.log(`Reservation ${reservationIdNum} not found in database`);
                 }
-            } else if (reservationId) {
-                console.log(`Invalid reservation ID format: ${reservationId}`);
             }
         }
 
         // Log in the user after successful registration/update
-        console.log(`Attempting login for email ${email}`);
         const user = await auth.loginUser(email, password, 'guest');
 
         if (!user) {
@@ -161,7 +123,6 @@ export async function POST(request: Request) {
         // Generate token
         const token = auth.generateToken(user);
         await auth.setAuthCookie(token);
-        console.log(`Login successful, token generated for user ID ${user.id}`);
 
         return NextResponse.json({
             token,
@@ -177,12 +138,12 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error('Registration error:', error);
 
-        // Type-safe error handling
-        if (isPostgresError(error) && error.code === '23505') {
-            return NextResponse.json(
-                {message: 'An account with this email already exists'},
-                {status: 400}
-            );
+        // Check for Postgres duplicate key error
+        if (typeof error === 'object'
+            && error !== null
+            && 'code' in error
+            && error.code === '23505') {
+            return errorResponse('An account with this email already exists', 400);
         }
 
         return NextResponse.json(
@@ -191,3 +152,4 @@ export async function POST(request: Request) {
         );
     }
 }
+

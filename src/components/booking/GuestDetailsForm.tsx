@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
+import { useAuth } from '@/context/AuthContext';
 
 import {
     Form,
@@ -27,14 +28,12 @@ import {
     CardTitle
 } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { GuestDetailsFormData, guestDetailsSchema } from "@/lib/validation-schemas";
-import { useAuth } from '@/context/AuthContext';
 
 export default function GuestDetailsForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const {setUserAndToken} = useAuth();
+    const {isAuthenticated, user, setUserAndToken} = useAuth();
 
     const checkIn = searchParams.get('checkIn');
     const checkOut = searchParams.get('checkOut');
@@ -55,8 +54,23 @@ export default function GuestDetailsForm() {
         }
     });
 
-    const createAccount = form.watch('createAccount');
+    // Pre-fill form with user data if logged in
+    useEffect(() => {
+        if (isAuthenticated && user) {
+            form.setValue('firstName', user.firstName);
+            form.setValue('lastName', user.lastName);
+            form.setValue('email', user.email);
 
+            // Add phone number pre-filling if available
+            if (user.phone) {
+                form.setValue('phone', user.phone);
+            }
+
+            form.setValue('createAccount', false);
+        }
+    }, [isAuthenticated, user, form]);
+
+    const createAccount = form.watch('createAccount');
 
     const onSubmit = async (data: GuestDetailsFormData) => {
         if (!checkIn || !checkOut || !roomId) {
@@ -74,17 +88,23 @@ export default function GuestDetailsForm() {
                 checkOutDate: checkOut,
                 roomId: parseInt(roomId),
                 guestDetails: {
+                    // Use form data values
                     firstName: data.firstName,
                     lastName: data.lastName,
                     email: data.email,
                     phone: data.phone,
-                    createAccount: data.createAccount,
-                    password: data.createAccount ? data.password : undefined
-                }
+
+                    // Don't need account creation if already logged in
+                    createAccount: isAuthenticated ? false : data.createAccount,
+                    password: (!isAuthenticated && data.createAccount) ? data.password : undefined
+                },
+                // Add flag for authenticated users
+                userAuthenticated: isAuthenticated
             });
 
             // If token and user data are returned (user created an account), set in auth context
-            if (data.createAccount && response.data.token && response.data.user) {
+            if (!isAuthenticated && data.createAccount && response.data.token && response.data.user) {
+                // Use the destructured function from the top of the component
                 setUserAndToken(response.data.user, response.data.token);
             }
 
@@ -96,6 +116,7 @@ export default function GuestDetailsForm() {
             } else {
                 setError('An unexpected error occurred while creating your reservation');
             }
+            setIsSubmitting(false);
         }
     }
 
@@ -104,10 +125,18 @@ export default function GuestDetailsForm() {
             <CardHeader>
                 <CardTitle>Guest Information</CardTitle>
                 <CardDescription>
-                    Enter your details to complete your reservation
+                    {isAuthenticated
+                        ? "Confirm your details to complete your reservation"
+                        : "Enter your details to complete your reservation"}
                 </CardDescription>
             </CardHeader>
             <CardContent>
+                {isAuthenticated && (
+                    <p className="text-blue-600 text-sm mb-4">
+                        Fields are pre-filled from your account information. You can edit them if
+                        needed.
+                    </p>
+                )}
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -118,8 +147,12 @@ export default function GuestDetailsForm() {
                                     <FormItem>
                                         <FormLabel>First Name</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="John" {...field}
-                                                   disabled={isSubmitting} />
+                                            <Input
+                                                placeholder="John"
+                                                {...field}
+                                                disabled={isSubmitting}
+                                                className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -133,8 +166,12 @@ export default function GuestDetailsForm() {
                                     <FormItem>
                                         <FormLabel>Last Name</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Doe" {...field}
-                                                   disabled={isSubmitting} />
+                                            <Input
+                                                placeholder="Doe"
+                                                {...field}
+                                                disabled={isSubmitting}
+                                                className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -149,14 +186,19 @@ export default function GuestDetailsForm() {
                                 <FormItem>
                                     <FormLabel>Email</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="your@email.com" {...field}
-                                               disabled={isSubmitting} />
+                                        <Input
+                                            placeholder="your@email.com"
+                                            {...field}
+                                            disabled={isSubmitting}
+                                            className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
+                        {/* In GuestDetailsForm.tsx */}
                         <FormField
                             control={form.control}
                             name="phone"
@@ -164,39 +206,53 @@ export default function GuestDetailsForm() {
                                 <FormItem>
                                     <FormLabel>Phone</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="XXX-XXX-XXXX" {...field}
-                                               disabled={isSubmitting} />
+                                        <Input
+                                            placeholder="123-456-7890"
+                                            {...field}
+                                            disabled={isSubmitting}
+                                            className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
+                                        />
                                     </FormControl>
+                                    {isAuthenticated && user?.phone && (
+                                        <FormDescription className="text-xs text-blue-600">
+                                            Using phone from your account
+                                        </FormDescription>
+                                    )}
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
-                        <FormField
-                            control={form.control}
-                            name="createAccount"
-                            render={({field}) => (
-                                <FormItem
-                                    className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                    <FormControl>
-                                        <Checkbox
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                            disabled={isSubmitting}
-                                        />
-                                    </FormControl>
-                                    <div className="space-y-1 leading-none">
-                                        <FormLabel>Create an account</FormLabel>
-                                        <FormDescription>
-                                            Create an account to easily manage your reservations and
-                                            receive special offers
-                                        </FormDescription>
-                                    </div>
-                                </FormItem>
-                            )}
-                        />
+                        {/* Only show account creation for non-authenticated users */}
+                        {!isAuthenticated && (
+                            <FormField
+                                control={form.control}
+                                name="createAccount"
+                                render={({field}) => (
+                                    <FormItem
+                                        className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                        <FormControl>
+                                            <Checkbox
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                                disabled={isSubmitting}
+                                            />
+                                        </FormControl>
+                                        <div className="space-y-1 leading-none">
+                                            <FormLabel>Create an account</FormLabel>
+                                            <FormDescription>
+                                                Create an account to easily manage your reservations
+                                                and
+                                                receive special offers
+                                            </FormDescription>
+                                        </div>
+                                    </FormItem>
+                                )}
+                            />
+                        )}
 
-                        {createAccount && (
+                        {/* Only show password field for account creation and non-authenticated users */}
+                        {!isAuthenticated && createAccount && (
                             <FormField
                                 control={form.control}
                                 name="password"
