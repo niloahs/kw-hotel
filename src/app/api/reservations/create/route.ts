@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { calculateNights } from "@/lib/utils";
 import { hash } from "bcryptjs";
-import { generateToken, UserType } from "@/lib/auth";
+import auth, { generateToken, UserType } from "@/lib/auth";
 import { randomUUID } from 'crypto';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const {checkInDate, checkOutDate, roomId, guestDetails} = body;
+        const {checkInDate, checkOutDate, roomId, guestDetails, userAuthenticated} = body;
 
         // Validate required data
         if (!checkInDate || !checkOutDate || !roomId || !guestDetails) {
@@ -25,68 +25,84 @@ export async function POST(request: Request) {
         let token = null;
         let userData = null;
 
-        // Check if guest exists
-        const existingGuest = await db.query(
-            'SELECT guest_id, is_account_created FROM guest WHERE email = $1',
-            [email]
-        );
-
-        if (existingGuest.rowCount! > 0) {
-            // Use existing guest
-            guestId = existingGuest.rows[0].guest_id;
-
-            // If they want to create an account and don't have one yet
-            if (createAccount && password && !existingGuest.rows[0].is_account_created) {
-                const passwordHash = await hash(password, 10);
-                await db.query(
-                    'UPDATE guest SET password_hash = $1, is_account_created = TRUE WHERE guest_id = $2',
-                    [passwordHash, guestId]
+        // Handle authenticated users
+        if (userAuthenticated) {
+            // Get the current authenticated user from auth middleware
+            const currentUser = await auth.getCurrentUser();
+            if (!currentUser) {
+                return NextResponse.json(
+                    {message: 'Authentication required'},
+                    {status: 401}
                 );
-
-                // Generate token for auto-login
-                userData = {
-                    id: guestId,
-                    firstName,
-                    lastName,
-                    email,
-                    type: 'guest' as UserType
-                };
-                token = generateToken(userData);
             }
+
+            // Use the authenticated user's ID directly
+            guestId = currentUser.id;
         } else {
-            // Create new guest
-            if (createAccount && password) {
-                // Create with account
-                const passwordHash = await hash(password, 10);
-                const newGuest = await db.query(
-                    `INSERT INTO guest (first_name, last_name, email, phone, password_hash,
-                                        is_account_created)
-                     VALUES ($1, $2, $3, $4, $5, TRUE)
-                     RETURNING guest_id`,
-                    [firstName, lastName, email, phone || null, passwordHash]
-                );
+            // For non-authenticated users, follow the existing flow
+            // Check if guest exists
+            const existingGuest = await db.query(
+                'SELECT guest_id, is_account_created FROM guest WHERE email = $1',
+                [email]
+            );
 
-                guestId = newGuest.rows[0].guest_id;
+            if (existingGuest.rowCount! > 0) {
+                // Use existing guest
+                guestId = existingGuest.rows[0].guest_id;
 
-                // Generate token for auto-login
-                userData = {
-                    id: guestId,
-                    firstName,
-                    lastName,
-                    email,
-                    type: 'guest' as UserType
-                };
-                token = generateToken(userData);
+                // If they want to create an account and don't have one yet
+                if (createAccount && password && !existingGuest.rows[0].is_account_created) {
+                    const passwordHash = await hash(password, 10);
+                    await db.query(
+                        'UPDATE guest SET password_hash = $1, is_account_created = TRUE WHERE guest_id = $2',
+                        [passwordHash, guestId]
+                    );
+
+                    // Generate token for auto-login
+                    userData = {
+                        id: guestId,
+                        firstName,
+                        lastName,
+                        email,
+                        type: 'guest' as UserType
+                    };
+                    token = generateToken(userData);
+                }
             } else {
-                // Create guest without account
-                const newGuest = await db.query(
-                    `INSERT INTO guest (first_name, last_name, email, phone, is_account_created)
-                     VALUES ($1, $2, $3, $4, FALSE)
-                     RETURNING guest_id`,
-                    [firstName, lastName, email, phone || null]
-                );
+                // Create new guest
+                if (createAccount && password) {
+                    // Create with account
+                    const passwordHash = await hash(password, 10);
+                    const newGuest = await db.query(
+                        `INSERT INTO guest (first_name, last_name, email, phone, password_hash,
+                                            is_account_created)
+                         VALUES ($1, $2, $3, $4, $5, TRUE)
+                         RETURNING guest_id`,
+                        [firstName, lastName, email, phone || null, passwordHash]
+                    );
 
-                guestId = newGuest.rows[0].guest_id;
+                    guestId = newGuest.rows[0].guest_id;
+
+                    // Generate token for auto-login
+                    userData = {
+                        id: guestId,
+                        firstName,
+                        lastName,
+                        email,
+                        type: 'guest' as UserType
+                    };
+                    token = generateToken(userData);
+                } else {
+                    // Create guest without account
+                    const newGuest = await db.query(
+                        `INSERT INTO guest (first_name, last_name, email, phone, is_account_created)
+                         VALUES ($1, $2, $3, $4, FALSE)
+                         RETURNING guest_id`,
+                        [firstName, lastName, email, phone || null]
+                    );
+
+                    guestId = newGuest.rows[0].guest_id;
+                }
             }
         }
 
@@ -129,7 +145,8 @@ export async function POST(request: Request) {
         `, [
             guestId, roomId, staffId, checkInDate, checkOutDate,
             'Confirmed', totalAmount, 'Unpaid', 'Credit Card', confirmationCode,
-            createAccount
+            // Auto-claim if authenticated or creating account
+            userAuthenticated || createAccount
         ]);
 
         const reservationId = reservationResult.rows[0].reservation_id;
@@ -144,7 +161,8 @@ export async function POST(request: Request) {
         return NextResponse.json({
             success: true,
             reservationId,
-            confirmationCode: createAccount ? null : confirmationCode,
+            // Only include confirmation code if not claimed
+            confirmationCode: userAuthenticated || createAccount ? null : confirmationCode,
             totalAmount,
             token,
             user: userData
