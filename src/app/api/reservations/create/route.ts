@@ -2,26 +2,28 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { calculateNights } from "@/lib/utils";
 import { hash } from "bcryptjs";
-import { generateToken } from "@/lib/auth";
+import { generateToken, UserType } from "@/lib/auth";
+import { randomUUID } from 'crypto';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { checkInDate, checkOutDate, roomId, guestDetails } = body;
+        const {checkInDate, checkOutDate, roomId, guestDetails} = body;
 
         // Validate required data
         if (!checkInDate || !checkOutDate || !roomId || !guestDetails) {
             return NextResponse.json(
-                { message: 'Missing required reservation information' },
-                { status: 400 }
+                {message: 'Missing required reservation information'},
+                {status: 400}
             );
         }
 
-        const { firstName, lastName, email, phone, createAccount, password } = guestDetails;
+        const {firstName, lastName, email, phone, createAccount, password} = guestDetails;
 
         // Create or retrieve guest record
         let guestId;
         let token = null;
+        let userData = null;
 
         // Check if guest exists
         const existingGuest = await db.query(
@@ -42,13 +44,14 @@ export async function POST(request: Request) {
                 );
 
                 // Generate token for auto-login
-                token = generateToken({
+                userData = {
                     id: guestId,
                     firstName,
                     lastName,
                     email,
-                    type: 'guest'
-                });
+                    type: 'guest' as UserType
+                };
+                token = generateToken(userData);
             }
         } else {
             // Create new guest
@@ -56,26 +59,30 @@ export async function POST(request: Request) {
                 // Create with account
                 const passwordHash = await hash(password, 10);
                 const newGuest = await db.query(
-                    `INSERT INTO guest (first_name, last_name, email, phone, password_hash, is_account_created)
-                     VALUES ($1, $2, $3, $4, $5, TRUE) RETURNING guest_id`,
+                    `INSERT INTO guest (first_name, last_name, email, phone, password_hash,
+                                        is_account_created)
+                     VALUES ($1, $2, $3, $4, $5, TRUE)
+                     RETURNING guest_id`,
                     [firstName, lastName, email, phone || null, passwordHash]
                 );
 
                 guestId = newGuest.rows[0].guest_id;
 
                 // Generate token for auto-login
-                token = generateToken({
+                userData = {
                     id: guestId,
                     firstName,
                     lastName,
                     email,
-                    type: 'guest'
-                });
+                    type: 'guest' as UserType
+                };
+                token = generateToken(userData);
             } else {
                 // Create guest without account
                 const newGuest = await db.query(
                     `INSERT INTO guest (first_name, last_name, email, phone, is_account_created)
-                     VALUES ($1, $2, $3, $4, FALSE) RETURNING guest_id`,
+                     VALUES ($1, $2, $3, $4, FALSE)
+                     RETURNING guest_id`,
                     [firstName, lastName, email, phone || null]
                 );
 
@@ -96,8 +103,8 @@ export async function POST(request: Request) {
 
         if (roomData.rowCount === 0) {
             return NextResponse.json(
-                { message: 'Room not found' },
-                { status: 404 }
+                {message: 'Room not found'},
+                {status: 404}
             );
         }
 
@@ -107,19 +114,22 @@ export async function POST(request: Request) {
         const nights = calculateNights(checkInDate, checkOutDate);
         const totalAmount = adjustedRate * nights;
 
+        // Generate a unique confirmation code
+        const confirmationCode = randomUUID().substring(0, 8).toUpperCase();
+
         // Create reservation (using a default staff ID for now)
         const staffId = 1;
 
         const reservationResult = await db.query(`
-            INSERT INTO reservation (
-                guest_id, room_id, staff_id, check_in_date, check_out_date,
-                status, total_amount, payment_status, payment_method
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            RETURNING reservation_id
+            INSERT INTO reservation (guest_id, room_id, staff_id, check_in_date, check_out_date,
+                                     status, total_amount, payment_status, payment_method,
+                                     confirmation_code, is_claimed)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            RETURNING reservation_id, confirmation_code
         `, [
             guestId, roomId, staffId, checkInDate, checkOutDate,
-            'Confirmed', totalAmount, 'Unpaid', 'Credit Card'
+            'Confirmed', totalAmount, 'Unpaid', 'Credit Card', confirmationCode,
+            createAccount
         ]);
 
         const reservationId = reservationResult.rows[0].reservation_id;
@@ -134,14 +144,16 @@ export async function POST(request: Request) {
         return NextResponse.json({
             success: true,
             reservationId,
+            confirmationCode: createAccount ? null : confirmationCode,
             totalAmount,
-            token
+            token,
+            user: userData
         });
     } catch (error) {
         console.error('Error creating reservation:', error);
         return NextResponse.json(
-            { message: 'An error occurred while creating the reservation' },
-            { status: 500 }
+            {message: 'An error occurred while creating the reservation'},
+            {status: 500}
         );
     }
 }

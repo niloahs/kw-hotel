@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import axios from 'axios';
-import { setCookie } from 'cookies-next';
 import {
     Form,
     FormControl,
@@ -18,14 +17,16 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { RegisterFormData, registerSchema } from "@/lib/validation-schemas";
-
+import { useAuth } from "@/context/AuthContext";
 
 interface RegisterFormProps {
     onSuccess?: () => void;
     onLoginClick?: () => void;
+    reservationId?: number;
 }
 
-export default function RegisterForm({onSuccess}: RegisterFormProps) {
+export default function RegisterForm({onSuccess, onLoginClick, reservationId}: RegisterFormProps) {
+    const { setUserAndToken } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -46,16 +47,20 @@ export default function RegisterForm({onSuccess}: RegisterFormProps) {
         setError('');
 
         try {
+            console.log("Registration with reservationId:", reservationId);
             const response = await axios.post('/api/auth/register', {
                 firstName: data.firstName,
                 lastName: data.lastName,
                 email: data.email,
                 phone: data.phone,
-                password: data.password
+                password: data.password,
+                reservationId: reservationId
             });
 
-            // Store the token in a cookie for client-side access
-            setCookie('kw_auth_token', response.data.token);
+            // Auto-sign in by using the returned token and user data
+            if (response.data.token && response.data.user) {
+                setUserAndToken(response.data.user, response.data.token);
+            }
 
             // Call success callback
             onSuccess?.();

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import axios from 'axios';
 import {
     Form,
@@ -16,43 +17,45 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
-import { LoginFormData, loginSchema } from "@/lib/validation-schemas";
-import { useAuth } from "@/context/AuthContext";
 
-interface LoginFormProps {
-    userType: 'guest' | 'staff';
+const linkReservationSchema = z.object({
+    confirmationCode: z.string().min(1, 'Confirmation code is required'),
+    email: z.string().email('Please enter a valid email')
+});
+
+type LinkReservationFormData = z.infer<typeof linkReservationSchema>;
+
+interface LinkReservationFormProps {
     onSuccess?: () => void;
-    onRegisterClick?: () => void;
 }
 
-export default function LoginForm({userType, onSuccess}: LoginFormProps) {
-    const { login } = useAuth();
+export default function LinkReservationForm({onSuccess}: LinkReservationFormProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
-    const form = useForm<LoginFormData>({
-        resolver: zodResolver(loginSchema),
+    const form = useForm<LinkReservationFormData>({
+        resolver: zodResolver(linkReservationSchema),
         defaultValues: {
-            email: '',
-            password: ''
+            confirmationCode: '',
+            email: ''
         }
     });
 
-    const onSubmit = async (data: LoginFormData) => {
+    const onSubmit = async (data: LinkReservationFormData) => {
         setIsLoading(true);
         setError('');
+        setSuccess('');
 
         try {
-            // Login function from AuthContext
-            await login(data.email, data.password, userType);
-
-            // Call success callback
+            const response = await axios.post('/api/reservations/link', data);
+            setSuccess(response.data.message);
             onSuccess?.();
         } catch (err) {
             if (axios.isAxiosError(err)) {
-                setError(err.response?.data?.message || 'An error occurred during login');
+                setError(err.response?.data?.message || 'Failed to link reservation');
             } else {
-                setError('An unexpected error occurred during login');
+                setError('An unexpected error occurred');
             }
         } finally {
             setIsLoading(false);
@@ -64,13 +67,13 @@ export default function LoginForm({userType, onSuccess}: LoginFormProps) {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                     control={form.control}
-                    name="email"
+                    name="confirmationCode"
                     render={({field}) => (
                         <FormItem>
-                            <FormLabel>Email</FormLabel>
+                            <FormLabel>Confirmation Code</FormLabel>
                             <FormControl>
                                 <Input
-                                    placeholder="your@email.com"
+                                    placeholder="Enter your confirmation code"
                                     {...field}
                                     disabled={isLoading}
                                 />
@@ -82,14 +85,13 @@ export default function LoginForm({userType, onSuccess}: LoginFormProps) {
 
                 <FormField
                     control={form.control}
-                    name="password"
+                    name="email"
                     render={({field}) => (
                         <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <FormLabel>Email Address</FormLabel>
                             <FormControl>
                                 <Input
-                                    type="password"
-                                    placeholder="********"
+                                    placeholder="Enter the email used for reservation"
                                     {...field}
                                     disabled={isLoading}
                                 />
@@ -105,13 +107,20 @@ export default function LoginForm({userType, onSuccess}: LoginFormProps) {
                     </Alert>
                 )}
 
+                {success && (
+                    <Alert variant="default"
+                           className="bg-green-50 text-green-800 border-green-200">
+                        <AlertDescription>{success}</AlertDescription>
+                    </Alert>
+                )}
+
                 <Button
                     type="submit"
                     className="w-full"
                     disabled={isLoading}
                 >
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isLoading ? 'Signing in...' : 'Sign In'}
+                    {isLoading ? 'Linking...' : 'Link Reservation'}
                 </Button>
             </form>
         </Form>

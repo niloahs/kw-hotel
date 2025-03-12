@@ -58,9 +58,11 @@ export async function getReservationById(reservationId: number): Promise<Reserva
                r.total_amount,
                r.payment_status,
                r.payment_method,
+               r.confirmation_code,
+               r.is_claimed,
                g.first_name || ' ' || g.last_name as guest_name,
                rm.room_number,
-               rt.type_name as room_type
+               rt.type_name                       as room_type
         FROM reservation r
                  JOIN
              guest g ON r.guest_id = g.guest_id
@@ -73,4 +75,28 @@ export async function getReservationById(reservationId: number): Promise<Reserva
 
     if (result.length === 0) return null;
     return result[0];
+}
+
+export async function getUserReservations(userId: number): Promise<Reservation[]> {
+    const result = await db.queryRows<Reservation>(`
+        SELECT r.reservation_id,
+               r.guest_id,
+               r.room_id,
+               r.check_in_date,
+               r.check_out_date,
+               r.status,
+               r.total_amount,
+               r.payment_status,
+               r.payment_method,
+               r.confirmation_code,
+               rm.room_number,
+               rt.type_name as room_type
+        FROM reservation r
+                 JOIN room rm ON r.room_id = rm.room_id
+                 JOIN room_type rt ON rm.room_type_id = rt.room_type_id
+        WHERE r.guest_id = $1 AND r.is_claimed = TRUE
+        ORDER BY r.check_in_date DESC
+    `, [userId]);
+
+    return result;
 }
