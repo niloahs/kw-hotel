@@ -52,6 +52,13 @@ export interface Reservation {
     isClaimed?: boolean;
 }
 
+//z User Reservation Types
+export interface UserReservation extends Reservation {
+    guestName: string;
+    roomNumber: string;
+    roomType: string;
+}
+
 // Service Types
 export interface Service {
     serviceId: number;

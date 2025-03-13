@@ -1,5 +1,5 @@
 import db from './db';
-import { Room, RoomType, Reservation } from '@/types';
+import { Room, RoomType, Reservation, UserReservation } from '@/types';
 
 // Helper function to get available rooms
 export async function getAvailableRooms(checkIn: string, checkOut: string): Promise<Room[]> {
@@ -97,6 +97,34 @@ export async function getUserReservations(userId: number): Promise<Reservation[]
         WHERE r.guest_id = $1 AND r.is_claimed = TRUE
         ORDER BY r.check_in_date DESC
     `, [userId]);
+
+    return result;
+}
+
+//z Helper function to get all reservations
+export async function getAllReservations(): Promise<UserReservation[]> {
+    const result = await db.queryRows<UserReservation>(`
+        SELECT r.reservation_id,
+               r.guest_id,
+               r.room_id,
+               r.staff_id,
+               r.check_in_date,
+               r.check_out_date,
+               r.status,
+               r.total_amount,
+               r.payment_status,
+               r.payment_method,
+               r.confirmation_code,
+               r.is_claimed,
+               g.first_name || ' ' || g.last_name as guest_name,
+               rm.room_number,
+               rt.type_name as room_type
+        FROM reservation r
+                 JOIN guest g ON r.guest_id = g.guest_id
+                 JOIN room rm ON r.room_id = rm.room_id
+                 JOIN room_type rt ON rm.room_type_id = rt.room_type_id
+        ORDER BY r.check_in_date DESC
+    `);
 
     return result;
 }
