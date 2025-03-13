@@ -79,28 +79,28 @@ CREATE TABLE guest_preference
     guest_preference_id SERIAL PRIMARY KEY,
     guest_id            INTEGER NOT NULL REFERENCES guest (guest_id) ON DELETE CASCADE,
     room_type_id        INTEGER NOT NULL REFERENCES room_type (room_type_id) ON DELETE RESTRICT,
-    notes               VARCHAR(255),
     UNIQUE (guest_id, room_type_id)
 );
 
 -- Create reservation table
 CREATE TABLE reservation
 (
-    reservation_id SERIAL PRIMARY KEY,
-    guest_id       INTEGER        NOT NULL REFERENCES guest (guest_id) ON DELETE RESTRICT,
-    room_id        INTEGER        NOT NULL REFERENCES room (room_id) ON DELETE RESTRICT,
-    staff_id       INTEGER        NOT NULL REFERENCES staff (staff_id) ON DELETE RESTRICT,
-    check_in_date  DATE           NOT NULL,
-    check_out_date DATE           NOT NULL,
-    status         VARCHAR(15)    NOT NULL CHECK (status IN
-                                                  ('Confirmed', 'Pending', 'Cancelled', 'CheckedIn',
-                                                   'CheckedOut')),
-    total_amount   DECIMAL(10, 2) NOT NULL CHECK (total_amount >= 0),
-    payment_status VARCHAR(10)    NOT NULL CHECK (payment_status IN ('Paid', 'Unpaid')),
-    payment_method VARCHAR(12)    NOT NULL CHECK (payment_method IN
-                                                  ('Credit Card', 'Debit Card', 'Cash', 'Cheque')),
+    reservation_id    SERIAL PRIMARY KEY,
+    guest_id          INTEGER        NOT NULL REFERENCES guest (guest_id) ON DELETE RESTRICT,
+    room_id           INTEGER        NOT NULL REFERENCES room (room_id) ON DELETE RESTRICT,
+    staff_id          INTEGER        NOT NULL REFERENCES staff (staff_id) ON DELETE RESTRICT,
+    check_in_date     DATE           NOT NULL,
+    check_out_date    DATE           NOT NULL,
+    status            VARCHAR(15)    NOT NULL CHECK (status IN
+                                                     ('Confirmed', 'Pending', 'Cancelled',
+                                                      'CheckedIn',
+                                                      'CheckedOut')),
+    total_amount      DECIMAL(10, 2) NOT NULL CHECK (total_amount >= 0),
+    payment_status    VARCHAR(10)    NOT NULL CHECK (payment_status IN ('Paid', 'Unpaid')),
+    payment_method    VARCHAR(12)    NOT NULL CHECK (payment_method IN
+                                                     ('Credit Card', 'Debit Card')),
     confirmation_code VARCHAR(10) UNIQUE,
-    is_claimed BOOLEAN DEFAULT FALSE,
+    is_claimed        BOOLEAN DEFAULT FALSE,
     CHECK (check_out_date > check_in_date)
 );
 
@@ -115,7 +115,9 @@ CREATE TABLE reservation_change
                                                         'Cancellation')),
     old_value             VARCHAR(255) NOT NULL,
     new_value             VARCHAR(255) NOT NULL,
-    change_date           TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+    change_date           TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    request_status        VARCHAR(10)  NOT NULL DEFAULT 'Completed'
+        CHECK (request_status IN ('Pending', 'Approved', 'Denied', 'Completed'))
 );
 
 -- Create service_charge table

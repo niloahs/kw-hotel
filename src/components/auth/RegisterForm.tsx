@@ -142,7 +142,7 @@ export default function RegisterForm({onSuccess, onLoginClick, reservationId}: R
                             <FormLabel>Phone</FormLabel>
                             <FormControl>
                                 <Input
-                                    placeholder="XXX-XXX-XXXX"
+                                    placeholder="123-456-7890"
                                     {...field}
                                     disabled={isLoading}
                                 />

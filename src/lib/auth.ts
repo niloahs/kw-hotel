@@ -11,6 +11,7 @@ export interface User {
     firstName: string;
     lastName: string;
     email: string;
+    phone?: string;
     type: UserType;
 }
 
@@ -50,7 +51,7 @@ export async function getCurrentUser(): Promise<User | null> {
         const idField = decoded.type === 'guest' ? 'guest_id' : 'staff_id';
 
         const result = await db.query(
-            `SELECT ${idField}, first_name, last_name, email
+            `SELECT ${idField}, first_name, last_name, email, phone
              FROM ${tableName}
              WHERE ${idField} = $1`,
             [decoded.id]
@@ -65,6 +66,7 @@ export async function getCurrentUser(): Promise<User | null> {
             firstName: user.first_name,
             lastName: user.last_name,
             email: user.email,
+            phone: user.phone,
             type: decoded.type
         };
     } catch (error) {
@@ -80,7 +82,7 @@ export async function loginUser(email: string, password: string, type: UserType)
         const idField = type === 'guest' ? 'guest_id' : 'staff_id';
 
         const result = await db.query(
-            `SELECT ${idField}, first_name, last_name, email, password_hash
+            `SELECT ${idField}, first_name, last_name, email, phone, password_hash
              FROM ${tableName}
              WHERE email = $1`,
             [email]
@@ -100,6 +102,7 @@ export async function loginUser(email: string, password: string, type: UserType)
             firstName: user.first_name,
             lastName: user.last_name,
             email: user.email,
+            phone: user.phone,
             type
         };
     } catch (error) {
