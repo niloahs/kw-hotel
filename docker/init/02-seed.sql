@@ -83,3 +83,15 @@ INSERT INTO service (service_name, base_price, is_external) VALUES
 ('DryClean', 25.00, true),
 ('WakeUpCall', 0.00, false),
 ('RoomService', 5.00, false);
+
+-- Insert guests
+INSERT INTO guest (first_name, last_name, email, phone, password_hash, is_account_created) VALUES
+('John', 'Doe', 'john.doe@example.com', '123-456-7890', 'hashedpassword1', TRUE),
+('Jane', 'Smith', 'jane.smith@example.com', '234-567-8901', 'hashedpassword2', TRUE);
+
+-- Insert reservations
+INSERT INTO reservation (guest_id, room_id, staff_id, check_in_date, check_out_date, status, total_amount, payment_status, payment_method, confirmation_code, is_claimed) VALUES
+(1, 1, 1, '2025-03-10', '2025-03-15', 'Confirmed', 500.00, 'Paid', 'Credit Card', 'CONF123', TRUE),
+(2, 2, 2, '2025-03-12', '2025-03-18', 'Pending', 600.00, 'Unpaid', 'Credit Card', 'CONF124', FALSE),
+(1, 3, 1, '2025-03-20', '2025-03-25', 'CheckedIn', 700.00, 'Paid', 'Credit Card', 'CONF125', TRUE),
+(2, 4, 2, '2025-03-22', '2025-03-27', 'Cancelled', 800.00, 'Unpaid', 'Credit Card', 'CONF126', FALSE);
