@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import axios from 'axios';
 import { UserReservation } from '@/types';
+import { format } from 'date-fns';
 
 export default function AllReservationsPage() {
     const [reservations, setReservations] = useState<UserReservation[]>([]);
@@ -39,13 +39,24 @@ export default function AllReservationsPage() {
             ) : error ? (
                 <p>{error}</p>
             ) : (
-                <ul>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {reservations.map(reservation => (
-                        <li key={reservation.reservationId}>
-                            {reservation.guestName} - {reservation.roomNumber} - {reservation.roomType} - {reservation.status}
-                        </li>
+                        <Card key={reservation.reservationId}>
+                            <CardHeader>
+                                <CardTitle>{reservation.guestName}</CardTitle>
+                                <CardDescription>
+                                    Room: {reservation.roomNumber} - {reservation.roomType}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <p>Status: {reservation.status}</p>
+                                <p>Check-in: {format(new Date(reservation.checkInDate), 'PPP')}</p>
+                                <p>Check-out: {format(new Date(reservation.checkOutDate), 'PPP')}</p>
+                                <p>Total Amount: ${reservation.totalAmount}</p>
+                            </CardContent>
+                        </Card>
                     ))}
-                </ul>
+                </div>
             )}
         </div>
     );
