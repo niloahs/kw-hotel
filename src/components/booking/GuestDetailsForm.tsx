@@ -30,6 +30,13 @@ import {
 } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GuestDetailsFormData, guestDetailsSchema } from "@/lib/validation-schemas";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 export default function GuestDetailsForm() {
     const router = useRouter();
@@ -51,7 +58,8 @@ export default function GuestDetailsForm() {
             email: '',
             phone: '',
             createAccount: false,
-            password: ''
+            password: '',
+            paymentCard: ''
         }
     });
 
@@ -97,7 +105,8 @@ export default function GuestDetailsForm() {
 
                     // Don't need account creation if already logged in
                     createAccount: isAuthenticated ? false : data.createAccount,
-                    password: (!isAuthenticated && data.createAccount) ? data.password : undefined
+                    password: (!isAuthenticated && data.createAccount) ? data.password : undefined,
+                    paymentCard: data.paymentCard
                 },
                 // Add flag for authenticated users
                 userAuthenticated: isAuthenticated
@@ -223,6 +232,144 @@ export default function GuestDetailsForm() {
                                 </FormItem>
                             )}
                         />
+                <Card>
+                    <CardHeader>
+                        <CardTitle>
+                        Payment method
+                        </CardTitle>
+                        <CardDescription>
+                            Enter Your card information to proceed
+                        </CardDescription>
+                        
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+
+                    <FormField
+                                control={form.control}
+                                name="CardName"
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel>Name on Card</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="John Doe"
+                                                {...field}
+                                                disabled={isSubmitting}
+                                                // className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                    <FormField
+                            control={form.control}
+                            name="paymentCard"
+                            render={({field}) => (
+                                <FormItem>
+                                    <FormLabel>Debit/Credit card number</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            placeholder="0000 0000 0000 0000"
+                                            {...field}
+                                            disabled={isSubmitting}
+                                            // className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormItem>
+                        <FormLabel>Expiration date</FormLabel>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-5">
+                        <Select 
+                                        // onValueChange={field.onChange}
+                                        // defaultValue={field.value}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue
+                                                    placeholder="Month" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12].map(num => (
+                                                <SelectItem key={num} value={num.toString()}>
+                                                    {num < 10 ? "0" : ""}{num}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+
+                                    <Select 
+                                        // onValueChange={field.onChange}
+                                        // defaultValue={field.value}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue
+                                                    placeholder="Year" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {[2025, 2026, 2027, 2028, 2029, 2030].map(num => (
+                                                <SelectItem key={num} value={num.toString()}>
+                                                    {num}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    </div>
+                                    </FormItem>
+
+                        <div className="grid grid-cols-1">
+                                    <FormField
+                                control={form.control}
+                                name="CVV"
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel>CVV</FormLabel>
+                                        <FormControl>
+                                            <Input className='form-control form-control-sm w-16'
+                                                placeholder=" 123"
+                                                maxLength={3}
+                                                pattern="\d{3}"
+                                                {...field}
+                                                disabled={isSubmitting}
+                                                // className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="BPC"
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel>Billing postal code</FormLabel>
+                                        <FormControl>
+                                            <Input className='w-24'
+                                                placeholder=" M5V 2T6"
+                                                maxLength={6}
+                                                pattern="\c{1}\i{1}\c{1}\i{1}\c{1}\{1}"
+                                                {...field}
+                                                disabled={isSubmitting}
+                                                // className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            </div>
+
+                    </CardContent>
+                </Card>
 
                         {/* Only show account creation for non-authenticated users */}
                         {!isAuthenticated && (

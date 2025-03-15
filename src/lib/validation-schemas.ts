@@ -46,7 +46,11 @@ export const guestDetailsSchema = z.object({
     email: z.string().email('Please enter a valid email'),
     phone: z.string().min(10, 'Please enter a valid phone number'),
     createAccount: z.boolean().default(false),
-    password: z.string().optional()
+    password: z.string().optional(),
+    paymentCard: z.string().optional(),
+    CVV: z.string().optional(),
+    CardName: z.string().optional(),
+    BPC: z.string().optional()
 }).refine(data => !data.createAccount || (data.password && data.password.length >= 6), {
     message: 'Password must be at least 6 characters when creating an account',
     path: ['password']

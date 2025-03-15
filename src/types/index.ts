@@ -105,5 +105,6 @@ export interface BookingData {
         phone?: string;
         createAccount: boolean;
         password?: string;
+        paymentCard?: string;
     };
 }
