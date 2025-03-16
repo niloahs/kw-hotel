@@ -1,4 +1,3 @@
-// src/app/reservations/confirmation/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
