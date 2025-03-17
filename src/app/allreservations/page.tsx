@@ -1,35 +1,56 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import axios from 'axios';
 import { UserReservation } from '@/types';
 import { format } from 'date-fns';
+import { User } from '@/lib/auth';
 
 export default function AllReservationsPage() {
     const [reservations, setReservations] = useState<UserReservation[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState('');
+    const router = useRouter();
    
     useEffect(() => {
-        const fetchReservations = async () => {
+        const checkUserRole = async () => {
+            try {
+                const userResponse = await axios.get('/api/auth/me');
+                if (!userResponse.data.user || userResponse.data.user.role !== 'staff') {
+                    router.push('/');
+                } else {
+                    fetchReservations(userResponse.data.user);
+                }
+            } catch (error) {
+                if (axios.isAxiosError(error) && error.response?.status === 401) {
+                    setError('Unauthorized access. Please log in.');
+                    router.push('/');
+                }else {
+                    setError('An unexpected error occurred while retrieving all the reservations');
+                }
+                setLoading(false);
+            }
+        };
+
+        const fetchReservations = async (user : User) => {
             try {
                 const response = await axios.get('/api/reservations/all');
                 setReservations(response.data);
             } catch(error){
                 if (axios.isAxiosError(error)) {
-                    setError(error.response?.data?.message || 'An error occurred while retrieving all the reservations') ; 
-                } else {
-                    setError('An unexpected error occurred while retrieving all the reservations')
+                setError(error.response?.data?.message || 'An error occurred while retrieving all the reservations') ; 
+            } else {
+                setError('An unexpected error occurred while retrieving all the reservations')
                 }
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
         };
+        checkUserRole();
 
-        fetchReservations();
-
-    }, []);
+    }, [router]);
 
     return (
         <div className="container mx-auto py-24 px-4">
