@@ -1,5 +1,5 @@
 import db from './db';
-import { Room, RoomType, Reservation, UserReservation } from '@/types';
+import { Room, RoomType, Reservation, UserReservation, Service } from '@/types';
 
 // Helper function to get available rooms
 export async function getAvailableRooms(checkIn: string, checkOut: string): Promise<Room[]> {
@@ -127,4 +127,14 @@ export async function getAllReservations(): Promise<UserReservation[]> {
     `);
 
     return result;
+}
+
+export async function getAllServices(): Promise<Service[]> {
+    const result = await db.query(`
+        SELECT service_name, base_price
+        FROM service
+        ORDER BY service_name
+    `);
+
+    return result.rows as Service[];
 }
