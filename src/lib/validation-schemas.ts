@@ -76,7 +76,6 @@ export const modificationSchema = z.object({
     requestType: z.enum(['DateChange', 'Cancellation']),
     checkInDate: z.date().optional(),
     checkOutDate: z.date().optional(),
-    notes: z.string().optional()
 }).refine(data => {
     if (data.requestType === 'DateChange') {
         return !!data.checkInDate && !!data.checkOutDate && data.checkOutDate > data.checkInDate;
