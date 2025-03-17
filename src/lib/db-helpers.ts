@@ -131,7 +131,7 @@ export async function getAllReservations(): Promise<UserReservation[]> {
 
 export async function getAllServices(): Promise<Service[]> {
     const result = await db.query(`
-        SELECT service_name, base_price
+        SELECT service_id, service_name, base_price
         FROM service
         ORDER BY service_name
     `);

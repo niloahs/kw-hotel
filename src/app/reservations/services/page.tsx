@@ -217,6 +217,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import React from 'react';
+import router from 'next/router';
 
 
 interface Service {
@@ -266,11 +267,11 @@ export default function ServicesPage() {
 
   const handleContinue = () => {
     console.log('Selected services:', selectedServices);
-    // Proceed with next step, e.g., navigate to confirmation page
+    router.push('/confirmation');
   };
 
   const handleSkip = () => {
-    // Skip selection and proceed with next step, e.g., navigate to confirmation page
+    router.push('/confirmation');
   };
 
 
