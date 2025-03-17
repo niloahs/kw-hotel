@@ -218,15 +218,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import React from 'react';
 import router from 'next/router';
+import { Service } from '@/types'; // Importing from the types folder
 
 
-interface Service {
-  id: number;
-  service_name: string;
-  description: string;
-  base_price: number;
-  icon: React.ComponentType<{ className?: string }>;
-}
+// interface Service {
+//   id: number;
+//   service_name: string;
+//   description: string;
+//   base_price: number;
+//   icon: React.ComponentType<{ className?: string }>;
+// }
 
 
 export default function ServicesPage() {
@@ -261,8 +262,8 @@ export default function ServicesPage() {
   };
 
   const totalPrice = selectedServices.reduce((sum, serviceId) => {
-    const service = services.find((s) => s.id === serviceId);
-    return sum + (service?.base_price || 0);
+    const service = services.find((s) => s.service_id === serviceId);
+    return sum + (service ? parseFloat(service.base_price.toString()) || 0 : 0);
   }, 0);
 
   const handleContinue = () => {
@@ -284,13 +285,10 @@ export default function ServicesPage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {loading ? (
-            <p>Loading services...</p>
-          ) : error ? (
-            <p>{error}</p>
-          ) : (
+          {(
             services.map((service) => (
-              <Card key={service.id} className={`overflow-hidden transition-all ${selectedServices.includes(service.id) ? 'ring-2 ring-primary' : ''}`}>
+              console.log(service),
+              <Card key={service.service_id} className={`overflow-hidden transition-all ${selectedServices.includes(service.service_id) ? 'ring-2 ring-primary' : ''}`}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
@@ -309,9 +307,9 @@ export default function ServicesPage() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button variant={selectedServices.includes(service.id) ? 'default' : 'outline'} className="w-full gap-2" onClick={() => toggleService(service.id)}>
-                    {selectedServices.includes(service.id) && <Check className="h-4 w-4" />}
-                    {selectedServices.includes(service.id) ? 'Selected' : 'Select'}
+                  <Button variant={selectedServices.includes(service.service_id) ? 'default' : 'outline'} className="w-full gap-2" onClick={() => toggleService(service.service_id)}>
+                    {selectedServices.includes(service.service_id) && <Check className="h-4 w-4" />}
+                    {selectedServices.includes(service.service_id) ? 'Selected' : 'Select'}
                   </Button>
                 </CardFooter>
               </Card>
@@ -327,11 +325,11 @@ export default function ServicesPage() {
                 <ScrollArea className="h-20 md:h-auto">
                   <div className="flex flex-wrap gap-2 mt-2 max-w-md">
                     {selectedServices.map((serviceId) => {
-                      const service = services.find((s) => s.id === serviceId);
+                      const service = services.find((s) => s.service_id === serviceId);
                       return (
                         <Badge key={serviceId} variant="secondary" className="text-xs">
                           {service?.service_name}
-                          {service?.base_price != null && service.base_price > 0 && ` ($${service.base_price.toFixed(2)})`}
+                          {service?.base_price != null && service.base_price > 0 && ` ($${parseFloat(service.base_price.toString()).toFixed(2)})`}
                         </Badge>
                       );
                     })}

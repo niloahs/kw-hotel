@@ -60,12 +60,19 @@ export interface UserReservation extends Reservation {
 }
 
 // Service Types
+// export interface Service {
+//     serviceId: number;
+//     serviceName: string;
+//     basePrice: number;
+//     isExternal: boolean;
+// }
+
 export interface Service {
-    serviceId: number;
-    serviceName: string;
-    basePrice: number;
-    isExternal: boolean;
-}
+    service_id: number;
+    service_name: string;
+    
+    base_price: number;
+  }
 
 export interface ServiceCharge {
     serviceChargeId: number;
