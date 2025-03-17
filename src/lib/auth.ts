@@ -11,6 +11,7 @@ export interface User {
     firstName: string;
     lastName: string;
     email: string;
+    phone?: string;
     type: UserType;
 }
 
@@ -50,7 +51,7 @@ export async function getCurrentUser(): Promise<User | null> {
         const idField = decoded.type === 'guest' ? 'guest_id' : 'staff_id';
 
         const result = await db.query(
-            `SELECT ${idField}, first_name, last_name, email
+            `SELECT ${idField}, first_name, last_name, email, phone
              FROM ${tableName}
              WHERE ${idField} = $1`,
             [decoded.id]
@@ -65,6 +66,7 @@ export async function getCurrentUser(): Promise<User | null> {
             firstName: user.first_name,
             lastName: user.last_name,
             email: user.email,
+            phone: user.phone,
             type: decoded.type
         };
     } catch (error) {
@@ -79,12 +81,15 @@ export async function loginUser(email: string, password: string, type: UserType)
         const tableName = type === 'guest' ? 'guest' : 'staff';
         const idField = type === 'guest' ? 'guest_id' : 'staff_id';
 
-        const result = await db.query(
-            `SELECT ${idField}, first_name, last_name, email, password_hash
-             FROM ${tableName}
-             WHERE email = $1`,
-            [email]
-        );
+        const query = type === 'guest'
+            ? `SELECT ${idField}, first_name, last_name, email, phone, password_hash
+               FROM ${tableName}
+               WHERE email = $1`
+            : `SELECT ${idField}, first_name, last_name, email, password_hash
+               FROM ${tableName}
+               WHERE email = $1`;
+
+        const result = await db.query(query, [email]);
 
         if (result.rowCount === 0) return null;
 
@@ -100,6 +105,7 @@ export async function loginUser(email: string, password: string, type: UserType)
             firstName: user.first_name,
             lastName: user.last_name,
             email: user.email,
+            phone: user.phone || '',
             type
         };
     } catch (error) {
@@ -164,7 +170,8 @@ export async function setAuthCookie(token: string): Promise<void> {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: '/'
+        path: '/',
+        sameSite: 'lax',
     });
 }
 

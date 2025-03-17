@@ -112,7 +112,6 @@ export default function BookingForm() {
                                                     selected={field.value}
                                                     onSelect={field.onChange}
                                                     disabled={(date) => date < new Date()}
-                                                    initialFocus
                                                 />
                                             </PopoverContent>
                                         </Popover>
@@ -155,7 +154,6 @@ export default function BookingForm() {
                                                     disabled={(date) =>
                                                         date < addDays(checkInDate, 1)
                                                     }
-                                                    initialFocus
                                                 />
                                             </PopoverContent>
                                         </Popover>

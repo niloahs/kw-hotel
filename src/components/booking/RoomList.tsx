@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import axios from 'axios';
@@ -23,11 +23,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import {
-    Alert,
-    AlertDescription,
-    AlertTitle,
-} from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle, } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function RoomList() {
@@ -148,7 +144,8 @@ export default function RoomList() {
                             <SelectContent>
                                 <SelectItem value="all">All Room Types</SelectItem>
                                 {roomTypes.map((type) => (
-                                    <SelectItem key={type.roomTypeId} value={type.roomTypeId.toString()}>
+                                    <SelectItem key={type.roomTypeId}
+                                                value={type.roomTypeId.toString()}>
                                         {type.typeName}
                                     </SelectItem>
                                 ))}
@@ -176,7 +173,7 @@ interface RoomCardProps {
     onSelect: () => void;
 }
 
-function RoomCard({ room, onSelect }: RoomCardProps) {
+function RoomCard({room, onSelect}: RoomCardProps) {
     return (
         <Card className="overflow-hidden hover:shadow-lg transition-shadow">
             <div className="relative h-48">

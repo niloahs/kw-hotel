@@ -40,6 +40,7 @@ export async function POST(request: Request) {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 email: user.email,
+                phone: user.phone,
                 type: user.type
             }
         });
