@@ -111,8 +111,7 @@ CREATE TABLE reservation_change
     reservation_id        INTEGER      NOT NULL REFERENCES reservation (reservation_id) ON DELETE CASCADE,
     staff_id              INTEGER      NOT NULL REFERENCES staff (staff_id) ON DELETE RESTRICT,
     change_type           VARCHAR(15)  NOT NULL CHECK (change_type IN
-                                                       ('DateChange', 'RoomChange', 'StatusChange',
-                                                        'Cancellation')),
+                                                       ('DateChange', 'Cancellation')),
     old_value             VARCHAR(255) NOT NULL,
     new_value             VARCHAR(255) NOT NULL,
     change_date           TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
