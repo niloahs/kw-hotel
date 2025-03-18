@@ -8,7 +8,7 @@ import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Reservation } from "@/types";
+import { Reservation, ServiceCharge } from "@/types";
 import AuthModal from '@/components/modals/AuthModal';
 import { ClipboardCopy } from 'lucide-react';
 
@@ -16,6 +16,7 @@ export default function ConfirmationPage() {
     const searchParams = useSearchParams();
     const reservationId = searchParams.get('id');
     const [reservation, setReservation] = useState<Reservation | null>(null);
+    const [serviceCharges, setServiceCharges] = useState<ServiceCharge | null>(null); 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -33,6 +34,7 @@ export default function ConfirmationPage() {
             try {
                 const response = await axios.get(`/api/reservations/${reservationId}`);
                 setReservation(response.data);
+                
             } catch (error) {
                 if (axios.isAxiosError(error)) {
                     setError(error.response?.data?.message || 'Failed to load reservation details');
@@ -60,6 +62,8 @@ export default function ConfirmationPage() {
                 console.error('Failed to copy: ', err);
             });
     };
+
+    
 
     if (loading) {
         return (
@@ -127,6 +131,7 @@ export default function ConfirmationPage() {
                             <div>
                                 <p className="text-gray-500">Total Amount</p>
                                 <p className="font-semibold">{formatCurrency(reservation.totalAmount)}</p>
+                    
                             </div>
 
                             {/* Reservation Code Section */}
