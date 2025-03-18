@@ -104,19 +104,20 @@ CREATE TABLE reservation
     CHECK (check_out_date > check_in_date)
 );
 
--- Create reservation_change table
+-- Create reservation_change table with explicit date fields
 CREATE TABLE reservation_change
 (
     reservation_change_id SERIAL PRIMARY KEY,
-    reservation_id        INTEGER      NOT NULL REFERENCES reservation (reservation_id) ON DELETE CASCADE,
-    staff_id              INTEGER      NOT NULL REFERENCES staff (staff_id) ON DELETE RESTRICT,
-    change_type           VARCHAR(15)  NOT NULL CHECK (change_type IN
-                                                       ('DateChange', 'Cancellation')),
-    old_value             VARCHAR(255) NOT NULL,
-    new_value             VARCHAR(255) NOT NULL,
-    change_date           TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    request_status        VARCHAR(10)  NOT NULL DEFAULT 'Completed'
-        CHECK (request_status IN ('Pending', 'Approved', 'Denied', 'Completed'))
+    reservation_id        INTEGER     NOT NULL REFERENCES reservation (reservation_id) ON DELETE CASCADE,
+    staff_id              INTEGER REFERENCES staff (staff_id) ON DELETE RESTRICT,
+    change_type           VARCHAR(15) NOT NULL CHECK (change_type IN ('DateChange', 'Cancellation')),
+    old_check_in_date     DATE,
+    old_check_out_date    DATE,
+    new_check_in_date     DATE,
+    new_check_out_date    DATE,
+    change_date           TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    request_status        VARCHAR(10) NOT NULL DEFAULT 'Pending'
+        CHECK (request_status IN ('Pending', 'Approved', 'Rejected'))
 );
 
 -- Create service_charge table
