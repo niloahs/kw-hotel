@@ -1,5 +1,5 @@
 import db from './db';
-import { Room, RoomType, Reservation, UserReservation } from '@/types';
+import { Room, RoomType, Reservation, UserReservation, Service, ServiceCharge } from '@/types';
 
 // Helper function to get available rooms
 export async function getAvailableRooms(checkIn: string, checkOut: string): Promise<Room[]> {
@@ -127,4 +127,25 @@ export async function getAllReservations(): Promise<UserReservation[]> {
     `);
 
     return result;
+}
+
+export async function getAllServices(): Promise<Service[]> {
+    const result = await db.query(`
+        SELECT service_id, service_name, base_price
+        FROM service
+        ORDER BY service_name
+    `);
+
+    return result.rows as Service[];
+}
+
+
+export async function getServiceCharge(reservationId: number): Promise<number> {
+    const result = await db.queryRows<{ total: number }>(`
+        SELECT COALESCE(SUM(charged_amount), 0) AS total
+        FROM service_charge
+        WHERE reservation_id = $1
+    `, [reservationId]);
+
+    return parseFloat((result[0]?.total || "0.00").toString());
 }
