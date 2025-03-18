@@ -140,12 +140,12 @@ export async function getAllServices(): Promise<Service[]> {
 }
 
 
-export async function getServiceCharge(reservationId: number): Promise<Reservation | null> {
-    const result = await db.queryRows<Reservation>(`
-        SELECT reservation_id, charged_amount
+export async function getServiceCharge(reservationId: number): Promise<number> {
+    const result = await db.queryRows<{ total: number }>(`
+        SELECT COALESCE(SUM(charged_amount), 0) AS total
         FROM service_charge
+        WHERE reservation_id = $1
     `, [reservationId]);
 
-    if (result.length === 0) return null;
-    return result[0];
+    return parseFloat((result[0]?.total || "0.00").toString());
 }
