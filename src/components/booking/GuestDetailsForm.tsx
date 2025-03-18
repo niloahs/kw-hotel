@@ -110,7 +110,7 @@ export default function GuestDetailsForm() {
             }
 
             // Redirect to confirmation page
-            router.push(`/reservations/confirmation?id=${response.data.reservationId}`);
+            router.push(`/reservations/services?id=${response.data.reservationId}`);
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 setError(error.response?.data?.message || 'An error occurred while creating your reservation');

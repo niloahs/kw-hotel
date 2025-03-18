@@ -75,7 +75,6 @@ export interface Service {
   }
 
 export interface ServiceCharge {
-    serviceChargeId: number;
     serviceId: number;
     reservationId: number;
     quantity: number;
