@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
-import { UserReservation } from '@/types';
 
 // Make sure this is exported correctly
 export async function POST(req: Request): Promise<NextResponse> {
