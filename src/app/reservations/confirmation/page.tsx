@@ -1,8 +1,7 @@
-// src/app/reservations/confirmation/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
@@ -11,8 +10,11 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { Reservation, ServiceCharge } from "@/types";
 import AuthModal from '@/components/modals/AuthModal';
 import { ClipboardCopy } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function ConfirmationPage() {
+    const {isAuthenticated} = useAuth();
+    const router = useRouter();
     const searchParams = useSearchParams();
     const reservationId = searchParams.get('id');
     const [reservation, setReservation] = useState<Reservation | null>(null);
@@ -24,6 +26,21 @@ export default function ConfirmationPage() {
 
 
     useEffect(() => {
+        // Check if auth is loaded on page entry
+        const checkAuthStatus = async () => {
+            // If we have a token in cookie but not loaded in context, try to load it
+            const token = document.cookie.includes('kw_auth_token');
+            if (token && !isAuthenticated) {
+                try {
+                    console.log("Auth token exists");
+                } catch (error) {
+                    console.error("Error checking auth status", error);
+                }
+            }
+        };
+
+        checkAuthStatus();
+
         if (reservationId) {
             fetchReservation();
             fetchServiceCharge();
@@ -57,16 +74,13 @@ export default function ConfirmationPage() {
             }
         }
         
-    }, [reservationId]);
+    }, [reservationId, isAuthenticated]);
 
     
 
 
     const copyToClipboard = () => {
-
-        if (!reservation) return;
-
-        if (!reservation.confirmationCode) return;
+        if (!reservation?.confirmationCode) return;
 
         navigator.clipboard.writeText(reservation.confirmationCode)
             .then(() => {
@@ -78,7 +92,9 @@ export default function ConfirmationPage() {
             });
     };
 
-
+    const navigateToHomepage = () => {
+        router.push('/');
+    };
 
     if (loading) {
         return (
@@ -100,7 +116,7 @@ export default function ConfirmationPage() {
                     <Card>
                         <CardContent className="pt-6">
                             <p className="text-red-500 mb-4">{error || 'Reservation not found'}</p>
-                            <Button onClick={() => window.location.href = '/'}>
+                            <Button onClick={navigateToHomepage}>
                                 Return to Home
                             </Button>
                         </CardContent>
@@ -201,15 +217,13 @@ export default function ConfirmationPage() {
                                         <h3 className="font-semibold text-green-800 mb-2">Reservation
                                             Saved</h3>
                                         <p>Your reservation has been linked to your account. You can
-                                            view
-                                            and manage your reservations from your account page.
+                                           view and manage your reservations from your account page.
                                         </p>
                                     </div>
                                 </div>
                             )}
 
-                            <Button className="w-full mt-6"
-                                onClick={() => window.location.href = '/'}>
+                            <Button className="w-full mt-6" onClick={navigateToHomepage}>
                                 Return to Homepage
                             </Button>
                         </CardContent>

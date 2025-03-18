@@ -1,15 +1,18 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import LinkReservationForm from '@/components/account/LinkReservationForm';
+import ReservationList from '@/components/account/ReservationList';
 
 export default function AccountPage() {
     const {isAuthenticated, isLoading} = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const tab = searchParams.get('tab') || 'reservations';
 
     // Protect the page
     useEffect(() => {
@@ -31,10 +34,20 @@ export default function AccountPage() {
             <h1 className="text-4xl font-display text-center mb-12">My Account</h1>
 
             <div className="max-w-3xl mx-auto">
-                <Tabs defaultValue="reservations">
+                <Tabs defaultValue={tab}>
                     <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="reservations">My Reservations</TabsTrigger>
-                        <TabsTrigger value="link">Link Reservation</TabsTrigger>
+                        <TabsTrigger
+                            value="reservations"
+                            onClick={() => router.push('/account?tab=reservations')}
+                        >
+                            My Reservations
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="link"
+                            onClick={() => router.push('/account?tab=link')}
+                        >
+                            Link Reservation
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="reservations">
@@ -46,8 +59,7 @@ export default function AccountPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {/* TODO: Reservation List */}
-                                <p>Reservation List</p>
+                                <ReservationList />
                             </CardContent>
                         </Card>
                     </TabsContent>
