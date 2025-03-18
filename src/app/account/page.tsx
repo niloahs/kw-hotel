@@ -16,6 +16,7 @@ export default function AccountPage() {
 
     // Protect the page
     useEffect(() => {
+    
         if (!isLoading && !isAuthenticated) {
             router.push('/');
         }

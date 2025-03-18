@@ -57,6 +57,7 @@ export interface UserReservation extends Reservation {
     guestName: string;
     roomNumber: string;
     roomType: string;
+    requestStatus: string;
 }
 
 // Service Types
