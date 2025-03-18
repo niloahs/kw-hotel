@@ -18,6 +18,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { RegisterFormData, registerSchema } from "@/lib/validation-schemas";
 import { useAuth } from "@/context/AuthContext";
+import { formatPhoneNumber } from '@/lib/utils';
 
 interface RegisterFormProps {
     onSuccess?: () => void;
@@ -151,7 +152,6 @@ export default function RegisterForm({onSuccess, onLoginClick, reservationId}: R
                         </FormItem>
                     )}
                 />
-
                 <FormField
                     control={form.control}
                     name="password"

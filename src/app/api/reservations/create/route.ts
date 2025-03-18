@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
-import { calculateNights } from "@/lib/utils";
+import { calculateNights, formatPhoneNumber } from "@/lib/utils";
 import { hash } from "bcryptjs";
 import auth, { generateToken, UserType } from "@/lib/auth";
 import { randomUUID } from 'crypto';
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
                             `INSERT INTO guest (first_name, last_name, email, phone, is_account_created)
                              VALUES ($1, $2, $3, $4, FALSE)
                              RETURNING guest_id`,
-                            [firstName, lastName, email, phone || null]
+                            [firstName, lastName, email, formatPhoneNumber(phone) || null]
                         );
 
                         guestId = newGuest.rows[0].guest_id;
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
                 RETURNING reservation_id, confirmation_code
             `, [
                 guestId, roomId, staffId, checkInDate, checkOutDate,
-                'Confirmed', totalAmount, 'Unpaid', 'Credit Card', confirmationCode,
+                'Confirmed', totalAmount, 'Paid', 'Credit Card', confirmationCode,
                 // Auto-claim if authenticated or creating account
                 userAuthenticated || createAccount
             ]);
