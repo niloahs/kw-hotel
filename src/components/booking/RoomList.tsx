@@ -26,6 +26,10 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle, } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 
+function getRandomNumber(): number {
+    return Math.floor(Math.random() * 5);
+}
+const roomImages: string[] = ["-room1.jpg", "-room2.jpg","-room3.jpg","-room4.jpg","-room5.jpg",]
 export default function RoomList() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -178,7 +182,7 @@ function RoomCard({room, onSelect}: RoomCardProps) {
         <Card className="overflow-hidden hover:shadow-lg transition-shadow">
             <div className="relative h-48">
                 <Image
-                    src={`/images/rooms/${room.typeName?.toLowerCase().replace(' ', '-') || 'default'}.jpg`}
+                    src={`/${room.typeName?.toLocaleLowerCase()}/${room.typeName?.toLocaleLowerCase()}${roomImages[getRandomNumber()]}`}
                     alt={room.typeName || 'Hotel Room'}
                     fill
                     className="object-cover"

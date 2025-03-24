@@ -7,7 +7,7 @@ import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Reservation } from "@/types";
+import { Reservation, ServiceCharge } from "@/types";
 import AuthModal from '@/components/modals/AuthModal';
 import { ClipboardCopy } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -18,10 +18,12 @@ export default function ConfirmationPage() {
     const searchParams = useSearchParams();
     const reservationId = searchParams.get('id');
     const [reservation, setReservation] = useState<Reservation | null>(null);
+    const [totalServiceCharge, setTotalServiceCharge] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [codeCopied, setCodeCopied] = useState(false);
+
 
     useEffect(() => {
         // Check if auth is loaded on page entry
@@ -41,6 +43,7 @@ export default function ConfirmationPage() {
 
         if (reservationId) {
             fetchReservation();
+            fetchServiceCharge();
         } else {
             setError('No reservation ID provided');
             setLoading(false);
@@ -50,6 +53,7 @@ export default function ConfirmationPage() {
             try {
                 const response = await axios.get(`/api/reservations/${reservationId}`);
                 setReservation(response.data);
+
             } catch (error) {
                 if (axios.isAxiosError(error)) {
                     setError(error.response?.data?.message || 'Failed to load reservation details');
@@ -60,7 +64,20 @@ export default function ConfirmationPage() {
                 setLoading(false);
             }
         }
+        async function fetchServiceCharge() {
+            try {
+                const response = await axios.get(`/api/chargeAmount/${reservationId}`);
+                console.log("Service Charge Response:", response.data);
+                setTotalServiceCharge(parseFloat(response.data.totalCharge));
+            } catch (error) {
+                console.error("Failed to fetch service charge:", error);
+            }
+        }
+        
     }, [reservationId, isAuthenticated]);
+
+    
+
 
     const copyToClipboard = () => {
         if (!reservation?.confirmationCode) return;
@@ -109,6 +126,9 @@ export default function ConfirmationPage() {
         );
     }
 
+    const totalAmountWithCharge = Number(reservation.totalAmount) + (totalServiceCharge ?? 0);
+    console.log("Total Amount with Charge:", totalAmountWithCharge);
+
     return (
         <>
             <Navigation />
@@ -139,22 +159,37 @@ export default function ConfirmationPage() {
                             <div>
                                 <p className="text-gray-500">Room</p>
                                 <p className="font-semibold">{reservation.roomType} -
-                                                                                    Room {reservation.roomNumber}</p>
+                                    Room {reservation.roomNumber}</p>
+                            </div>
+
+                            <div className="border-t border-b py-4 my-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-gray-500">Room Cost</p>
+                                        <p className="font-semibold">{formatCurrency(reservation.totalAmount)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-500">Service Charges</p>
+                                        <p className="font-semibold">{formatCurrency(Number(totalServiceCharge))}</p>  
+                                    </div>
+                                </div>        
                             </div>
 
                             <div>
                                 <p className="text-gray-500">Total Amount</p>
-                                <p className="font-semibold">{formatCurrency(reservation.totalAmount)}</p>
+                                <p className="font-semibold">{formatCurrency(totalAmountWithCharge)}</p>
+
                             </div>
+
 
                             {/* Reservation Code Section */}
                             {reservation.confirmationCode && !reservation.isClaimed ? (
                                 <div className="border-t pt-4 mt-6">
                                     <div className="bg-blue-50 p-4 rounded-md">
                                         <h3 className="font-semibold text-blue-800 mb-2">Confirmation
-                                                                                         Code</h3>
+                                            Code</h3>
                                         <p className="mb-2">Please save your confirmation code to
-                                                            access your reservation later:
+                                            access your reservation later:
                                         </p>
                                         <div className="relative">
                                             <div
@@ -171,7 +206,7 @@ export default function ConfirmationPage() {
                                             </Button>
                                             {codeCopied && (
                                                 <p className="text-green-600 text-sm text-center">Code
-                                                                                                  copied!</p>
+                                                    copied!</p>
                                             )}
                                         </div>
                                     </div>
@@ -180,7 +215,7 @@ export default function ConfirmationPage() {
                                 <div className="border-t pt-4 mt-6">
                                     <div className="bg-green-50 p-4 rounded-md">
                                         <h3 className="font-semibold text-green-800 mb-2">Reservation
-                                                                                          Saved</h3>
+                                            Saved</h3>
                                         <p>Your reservation has been linked to your account. You can
                                            view and manage your reservations from your account page.
                                         </p>
