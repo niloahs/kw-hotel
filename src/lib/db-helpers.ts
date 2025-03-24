@@ -118,11 +118,13 @@ export async function getAllReservations(): Promise<UserReservation[]> {
                r.is_claimed,
                g.first_name || ' ' || g.last_name as guest_name,
                rm.room_number,
-               rt.type_name as room_type
+               rt.type_name as room_type,
+               rc.request_status
         FROM reservation r
                  JOIN guest g ON r.guest_id = g.guest_id
                  JOIN room rm ON r.room_id = rm.room_id
                  JOIN room_type rt ON rm.room_type_id = rt.room_type_id
+                 LEFT JOIN reservation_change rc ON r.reservation_id = rc.reservation_id
         ORDER BY r.check_in_date DESC
     `);
 
