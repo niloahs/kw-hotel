@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ReservationModal from '@/components/modals/ReservationModal';
 import axios from 'axios';
 import { UserReservation } from '@/types';
 import { format } from 'date-fns';
@@ -14,6 +15,8 @@ export default function AllReservationsPage() {
     const [reservations, setReservations] = useState<UserReservation[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState('');
+    const [selectedReservation, setSelectedReservation] = useState<UserReservation | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -32,7 +35,6 @@ export default function AllReservationsPage() {
         const fetchReservations = async () => {
             try {
                 const response = await axios.get('/api/reservations/all');
-                console.log('Fetched reservations:', response.data); // Debugging statement
                 setReservations(response.data);
             } catch (error) {
                 if (axios.isAxiosError(error)) {
@@ -48,26 +50,18 @@ export default function AllReservationsPage() {
         fetchReservations();
     }, [isAuthenticated, isStaff, router]);
 
-    const confirmReservation = async (reservationId: number) => {
-        try {
-            const response = await axios.post('/api/reservations/confirm', { reservationId });
-            console.log('Confirmed reservation:', response.data); // Debugging statement
-            // Optionally, refetch reservations to update the list
-            const updatedReservations = await axios.get('/api/reservations/all');
-            setReservations(updatedReservations.data);
-        } catch (error) {
-            console.error('Error confirming reservation:', error);
-            setError('An error occurred while confirming the reservation');
-        }
+    const openModal = (reservation: UserReservation) => {
+        setSelectedReservation(reservation);
+        setIsModalOpen(true);
     };
 
-    console.log('All reservations:', reservations); // Debugging statement
+    const closeModal = () => {
+        setSelectedReservation(null);
+        setIsModalOpen(false);
+    };
 
     const pendingReservations = reservations.filter((reservation: UserReservation) => reservation.requestStatus === 'Pending');
-    const confirmedReservations = reservations.filter((reservation: UserReservation) => reservation.requestStatus === 'Completed');
-
-    console.log('Pending reservations:', pendingReservations); // Debugging statement
-    console.log('Confirmed reservations:', confirmedReservations); // Debugging statement
+    const confirmedReservations = reservations.filter((reservation: UserReservation) => reservation.requestStatus === 'Approved');
 
     return (
         <div className="container mx-auto py-24 px-4">
@@ -86,26 +80,37 @@ export default function AllReservationsPage() {
                     <TabsContent value="all">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {reservations.map((reservation: UserReservation) => (
-                                <Card key={reservation.reservationId}>
-                                    <CardHeader>
-                                        <CardTitle>{reservation.guestName}</CardTitle>
-                                        <CardDescription>
-                                            Room: {reservation.roomNumber} - {reservation.roomType}
+                                <Card
+                                    key={reservation.reservationId}
+                                    className="border shadow-lg rounded-lg overflow-hidden cursor-pointer"
+                                    onClick={() => openModal(reservation)}
+                                >
+                                    <CardHeader className="bg-gray-100 p-4">
+                                        <CardTitle className="text-lg font-bold text-gray-800">{reservation.guestName}</CardTitle>
+                                        <CardDescription className="text-sm text-gray-600">
+                                            Room: <span className="font-medium">{reservation.roomNumber} - {reservation.roomType}</span>
                                         </CardDescription>
                                     </CardHeader>
-                                    <CardContent>
-                                        <p>Status: {reservation.requestStatus}</p>
-                                        <p>Check-in: {format(new Date(reservation.checkInDate), 'PPP')}</p>
-                                        <p>Check-out: {format(new Date(reservation.checkOutDate), 'PPP')}</p>
-                                        <p>Total Amount: ${reservation.totalAmount}</p>
-                                        {reservation.requestStatus === 'Pending' && (
-                                            <button
-                                                onClick={() => confirmReservation(reservation.reservationId)}
-                                                className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
-                                            >
-                                                Confirm Reservation
-                                            </button>
-                                        )}
+                                    <CardContent className="p-4">
+                                        <div className="mb-2">
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-semibold">Status: </span> 
+                                                {reservation.requestStatus === 'Approved' 
+                                                    ? `${reservation.requestStatus} & ${reservation.status}` 
+                                                    : reservation.requestStatus === 'Pending' 
+                                                    ? reservation.requestStatus 
+                                                    : reservation.status}
+                                            </p>
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-semibold">Check-in:</span> {format(new Date(reservation.checkInDate), 'PPP')}
+                                            </p>
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-semibold">Check-out:</span> {format(new Date(reservation.checkOutDate), 'PPP')}
+                                            </p>
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-semibold">Total Amount:</span> ${reservation.totalAmount}
+                                            </p>
+                                        </div>
                                     </CardContent>
                                 </Card>
                             ))}
@@ -114,18 +119,32 @@ export default function AllReservationsPage() {
                     <TabsContent value="confirmed">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {confirmedReservations.map((reservation: UserReservation) => (
-                                <Card key={reservation.reservationId}>
-                                    <CardHeader>
-                                        <CardTitle>{reservation.guestName}</CardTitle>
-                                        <CardDescription>
-                                            Room: {reservation.roomNumber} - {reservation.roomType}
+                                <Card
+                                    key={reservation.reservationId}
+                                    className="border shadow-lg rounded-lg overflow-hidden cursor-pointer"
+                                    onClick={() => openModal(reservation)}
+                                >
+                                    <CardHeader className="bg-gray-100 p-4">
+                                        <CardTitle className="text-lg font-bold text-gray-800">{reservation.guestName}</CardTitle>
+                                        <CardDescription className="text-sm text-gray-600">
+                                            Room: <span className="font-medium">{reservation.roomNumber} - {reservation.roomType}</span>
                                         </CardDescription>
                                     </CardHeader>
-                                    <CardContent>
-                                        <p>Status: {reservation.requestStatus}</p>
-                                        <p>Check-in: {format(new Date(reservation.checkInDate), 'PPP')}</p>
-                                        <p>Check-out: {format(new Date(reservation.checkOutDate), 'PPP')}</p>
-                                        <p>Total Amount: ${reservation.totalAmount}</p>
+                                    <CardContent className="p-4">
+                                        <div className="mb-2">
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-semibold">Status:</span> {reservation.requestStatus}
+                                            </p>
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-semibold">Check-in:</span> {format(new Date(reservation.checkInDate), 'PPP')}
+                                            </p>
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-semibold">Check-out:</span> {format(new Date(reservation.checkOutDate), 'PPP')}
+                                            </p>
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-semibold">Total Amount:</span> ${reservation.totalAmount}
+                                            </p>
+                                        </div>
                                     </CardContent>
                                 </Card>
                             ))}
@@ -134,24 +153,32 @@ export default function AllReservationsPage() {
                     <TabsContent value="pending">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {pendingReservations.map((reservation: UserReservation) => (
-                                <Card key={reservation.reservationId}>
-                                    <CardHeader>
-                                        <CardTitle>{reservation.guestName}</CardTitle>
-                                        <CardDescription>
-                                            Room: {reservation.roomNumber} - {reservation.roomType}
+                                <Card
+                                    key={reservation.reservationId}
+                                    className="border shadow-lg rounded-lg overflow-hidden cursor-pointer"
+                                    onClick={() => openModal(reservation)}
+                                >
+                                    <CardHeader className="bg-gray-100 p-4">
+                                        <CardTitle className="text-lg font-bold text-gray-800">{reservation.guestName}</CardTitle>
+                                        <CardDescription className="text-sm text-gray-600">
+                                            Room: <span className="font-medium">{reservation.roomNumber} - {reservation.roomType}</span>
                                         </CardDescription>
                                     </CardHeader>
-                                    <CardContent>
-                                        <p>Status: {reservation.requestStatus}</p>
-                                        <p>Check-in: {format(new Date(reservation.checkInDate), 'PPP')}</p>
-                                        <p>Check-out: {format(new Date(reservation.checkOutDate), 'PPP')}</p>
-                                        <p>Total Amount: ${reservation.totalAmount}</p>
-                                        <button
-                                            onClick={() => confirmReservation(reservation.reservationId)}
-                                            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
-                                        >
-                                            Confirm Reservation
-                                        </button>
+                                    <CardContent className="p-4">
+                                        <div className="mb-2">
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-semibold">Status:</span> {reservation.requestStatus}
+                                            </p>
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-semibold">Check-in:</span> {format(new Date(reservation.checkInDate), 'PPP')}
+                                            </p>
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-semibold">Check-out:</span> {format(new Date(reservation.checkOutDate), 'PPP')}
+                                            </p>
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-semibold">Total Amount:</span> ${reservation.totalAmount}
+                                            </p>
+                                        </div>
                                     </CardContent>
                                 </Card>
                             ))}
@@ -159,6 +186,13 @@ export default function AllReservationsPage() {
                     </TabsContent>
                 </Tabs>
             )}
+
+            {/* Reservation Modal */}
+            <ReservationModal
+                isOpen={isModalOpen}
+                onClose={closeModal}
+                reservation={selectedReservation}
+            />
         </div>
     );
 }
