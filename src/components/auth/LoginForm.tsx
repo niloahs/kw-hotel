@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import axios from 'axios';
 import {
     Form,
     FormControl,
@@ -17,15 +16,14 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { LoginFormData, loginSchema } from "@/lib/validation-schemas";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LoginFormProps {
-    userType: 'guest' | 'staff';
     onSuccess?: () => void;
     onRegisterClick?: () => void;
 }
 
-export default function LoginForm({userType, onSuccess}: LoginFormProps) {
+export default function LoginForm({onSuccess}: LoginFormProps) {
     const { login } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -43,17 +41,16 @@ export default function LoginForm({userType, onSuccess}: LoginFormProps) {
         setError('');
 
         try {
-            // Login function from AuthContext
-            await login(data.email, data.password, userType);
+            const result = await login(data.email, data.password);
 
-            // Call success callback
+            if (result?.error) {
+                throw new Error(result.error);
+            }
+
             onSuccess?.();
         } catch (err) {
-            if (axios.isAxiosError(err)) {
-                setError(err.response?.data?.message || 'An error occurred during login');
-            } else {
-                setError('An unexpected error occurred during login');
-            }
+            setError('Invalid email or password');
+            console.log(err);
         } finally {
             setIsLoading(false);
         }

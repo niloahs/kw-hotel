@@ -1,13 +1,24 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import { auth } from "@/lib/auth";
 
-// Make sure this is exported correctly
 export async function POST(req: Request): Promise<NextResponse> {
-    const { reservationId } = await req.json();
+    // Check staff permissions
+    const session = await auth();
+    if (!session || session.user.userType !== 'staff') {
+        return NextResponse.json(
+            {message: 'Staff authentication required'},
+            {status: 401}
+        );
+    }
+
+    const {reservationId} = await req.json();
     console.log('Received reservation:', reservationId);
 
     const changeTypeResult = await db.query(
-        `SELECT change_type FROM reservation_change WHERE reservation_id = $1`,
+        `SELECT change_type
+         FROM reservation_change
+         WHERE reservation_id = $1`,
         [reservationId]
     );
     const changeType = changeTypeResult.rows[0]?.change_type;
@@ -16,20 +27,24 @@ export async function POST(req: Request): Promise<NextResponse> {
         try {
             // Delete the reservation from the reservation table
             await db.query(
-                `DELETE FROM reservation WHERE reservation_id = $1`,
+                `DELETE
+                 FROM reservation
+                 WHERE reservation_id = $1`,
                 [reservationId]
             );
 
             // Update the request status in the reservation change table to "Approved"
             await db.query(
-                `UPDATE reservation_change SET request_status = $1 WHERE reservation_id = $2`,
+                `UPDATE reservation_change
+                 SET request_status = $1
+                 WHERE reservation_id = $2`,
                 ["Approved", reservationId]
             );
 
-            return NextResponse.json({ message: "Reservation cancelled successfully" }, { status: 200 });
+            return NextResponse.json({message: "Reservation cancelled successfully"}, {status: 200});
         } catch (error) {
             console.error(error);
-            return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+            return NextResponse.json({error: "Internal Server Error"}, {status: 500});
         }
     } else {
         try {
@@ -37,7 +52,9 @@ export async function POST(req: Request): Promise<NextResponse> {
 
             // Retrieve the new check-in date from the reservation_change table
             const newCheckInDateResult = await db.query(
-                `SELECT new_check_in_date FROM reservation_change WHERE reservation_id = $1`,
+                `SELECT new_check_in_date
+                 FROM reservation_change
+                 WHERE reservation_id = $1`,
                 [reservationId]
             );
             console.log('newCheckInDateResult:', newCheckInDateResult);
@@ -45,7 +62,9 @@ export async function POST(req: Request): Promise<NextResponse> {
 
             // Retrieve the new check-out date from the reservation_change table
             const newCheckOutDateResult = await db.query(
-                `SELECT new_check_out_date FROM reservation_change WHERE reservation_id = $1`,
+                `SELECT new_check_out_date
+                 FROM reservation_change
+                 WHERE reservation_id = $1`,
                 [reservationId]
             );
             console.log('newCheckOutDateResult:', newCheckOutDateResult);
@@ -53,25 +72,30 @@ export async function POST(req: Request): Promise<NextResponse> {
 
             if (!new_check_in_date || !new_check_out_date) {
                 console.log('Reservation change not found');
-                return NextResponse.json({ error: "Reservation change not found" }, { status: 404 });
+                return NextResponse.json({error: "Reservation change not found"}, {status: 404});
             }
 
             // Update the reservation table with the changes
             await db.query(
-                `UPDATE reservation SET check_in_date = $1, check_out_date = $2 WHERE reservation_id = $3`,
+                `UPDATE reservation
+                 SET check_in_date  = $1,
+                     check_out_date = $2
+                 WHERE reservation_id = $3`,
                 [new_check_in_date, new_check_out_date, reservationId]
             );
 
             // Update the request status in the reservation change table to "Approved"
             await db.query(
-                `UPDATE reservation_change SET request_status = $1 WHERE reservation_id = $2`,
+                `UPDATE reservation_change
+                 SET request_status = $1
+                 WHERE reservation_id = $2`,
                 ["Approved", reservationId]
             );
 
-            return NextResponse.json({ message: "Reservation updated successfully" }, { status: 200 });
+            return NextResponse.json({message: "Reservation updated successfully"}, {status: 200});
         } catch (error) {
             console.error(error);
-            return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+            return NextResponse.json({error: "Internal Server Error"}, {status: 500});
         }
     }
 }

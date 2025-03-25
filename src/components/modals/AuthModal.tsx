@@ -11,14 +11,6 @@ import {
 import LoginForm from '../auth/LoginForm';
 import RegisterForm from '../auth/RegisterForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { UserType } from '@/lib/auth';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -36,14 +28,12 @@ export default function AuthModal({
                                       reservationId
                                   }: AuthModalProps) {
     const [activeTab, setActiveTab] = useState<string>(initialView);
-    const [loginUserType, setLoginUserType] = useState<UserType>('guest');
 
     // Reset tab when modal is closed
     useEffect(() => {
         if (!isOpen) {
             setTimeout(() => {
                 setActiveTab(initialView);
-                setLoginUserType('guest');
             }, 300);
         }
     }, [isOpen, initialView]);
@@ -72,25 +62,7 @@ export default function AuthModal({
                     </TabsList>
 
                     <TabsContent value="login">
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium mb-2">
-                                User Type
-                            </label>
-                            <Select
-                                value={loginUserType}
-                                onValueChange={(value) => setLoginUserType(value as UserType)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select user type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="guest">Guest</SelectItem>
-                                    <SelectItem value="staff">Staff</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
                         <LoginForm
-                            userType={loginUserType}
                             onSuccess={handleSuccess}
                             onRegisterClick={() => setActiveTab('register')}
                         />

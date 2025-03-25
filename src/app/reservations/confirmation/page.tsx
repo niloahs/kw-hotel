@@ -66,7 +66,7 @@ export default function ConfirmationPage() {
         }
         async function fetchServiceCharge() {
             try {
-                const response = await axios.get(`/api/chargeAmount/${reservationId}`);
+                const response = await axios.get(`/api/charge-amount/${reservationId}`);
                 console.log("Service Charge Response:", response.data);
                 setTotalServiceCharge(parseFloat(response.data.totalCharge));
             } catch (error) {
