@@ -7,10 +7,10 @@ import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Reservation, ServiceCharge } from "@/types";
+import { Reservation } from "@/types";
 import AuthModal from '@/components/modals/AuthModal';
 import { ClipboardCopy } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ConfirmationPage() {
     const {isAuthenticated} = useAuth();
@@ -24,23 +24,18 @@ export default function ConfirmationPage() {
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [codeCopied, setCodeCopied] = useState(false);
 
+    // Show auth modal if not authenticated and we have a reservation that isn't claimed
+    useEffect(() => {
+        if (reservation && !isAuthenticated && reservation.confirmationCode && !reservation.isClaimed) {
+            // Optional: Show auth modal after a delay to give user time to read the confirmation
+            const timer = setTimeout(() => {
+                setIsAuthModalOpen(true);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [reservation, isAuthenticated]);
 
     useEffect(() => {
-        // Check if auth is loaded on page entry
-        const checkAuthStatus = async () => {
-            // If we have a token in cookie but not loaded in context, try to load it
-            const token = document.cookie.includes('kw_auth_token');
-            if (token && !isAuthenticated) {
-                try {
-                    console.log("Auth token exists");
-                } catch (error) {
-                    console.error("Error checking auth status", error);
-                }
-            }
-        };
-
-        checkAuthStatus();
-
         if (reservationId) {
             fetchReservation();
             fetchServiceCharge();
@@ -53,7 +48,6 @@ export default function ConfirmationPage() {
             try {
                 const response = await axios.get(`/api/reservations/${reservationId}`);
                 setReservation(response.data);
-
             } catch (error) {
                 if (axios.isAxiosError(error)) {
                     setError(error.response?.data?.message || 'Failed to load reservation details');
@@ -64,20 +58,16 @@ export default function ConfirmationPage() {
                 setLoading(false);
             }
         }
+
         async function fetchServiceCharge() {
             try {
                 const response = await axios.get(`/api/charge-amount/${reservationId}`);
-                console.log("Service Charge Response:", response.data);
                 setTotalServiceCharge(parseFloat(response.data.totalCharge));
             } catch (error) {
                 console.error("Failed to fetch service charge:", error);
             }
         }
-        
-    }, [reservationId, isAuthenticated]);
-
-    
-
+    }, [reservationId]);
 
     const copyToClipboard = () => {
         if (!reservation?.confirmationCode) return;
@@ -94,6 +84,10 @@ export default function ConfirmationPage() {
 
     const navigateToHomepage = () => {
         router.push('/');
+    };
+
+    const navigateToAccount = () => {
+        router.push('/account?tab=reservations');
     };
 
     if (loading) {
@@ -127,7 +121,6 @@ export default function ConfirmationPage() {
     }
 
     const totalAmountWithCharge = Number(reservation.totalAmount) + (totalServiceCharge ?? 0);
-    console.log("Total Amount with Charge:", totalAmountWithCharge);
 
     return (
         <>
@@ -170,26 +163,24 @@ export default function ConfirmationPage() {
                                     </div>
                                     <div>
                                         <p className="text-gray-500">Service Charges</p>
-                                        <p className="font-semibold">{formatCurrency(Number(totalServiceCharge))}</p>  
+                                        <p className="font-semibold">{formatCurrency(Number(totalServiceCharge ?? 0))}</p>
                                     </div>
-                                </div>        
+                                </div>
                             </div>
 
                             <div>
                                 <p className="text-gray-500">Total Amount</p>
                                 <p className="font-semibold">{formatCurrency(totalAmountWithCharge)}</p>
-
                             </div>
-
 
                             {/* Reservation Code Section */}
                             {reservation.confirmationCode && !reservation.isClaimed ? (
                                 <div className="border-t pt-4 mt-6">
                                     <div className="bg-blue-50 p-4 rounded-md">
                                         <h3 className="font-semibold text-blue-800 mb-2">Confirmation
-                                            Code</h3>
+                                                                                         Code</h3>
                                         <p className="mb-2">Please save your confirmation code to
-                                            access your reservation later:
+                                                            access your reservation later:
                                         </p>
                                         <div className="relative">
                                             <div
@@ -206,19 +197,39 @@ export default function ConfirmationPage() {
                                             </Button>
                                             {codeCopied && (
                                                 <p className="text-green-600 text-sm text-center">Code
-                                                    copied!</p>
+                                                                                                  copied!</p>
                                             )}
                                         </div>
+                                        {!isAuthenticated && (
+                                            <div className="mt-4 text-blue-700">
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    onClick={() => setIsAuthModalOpen(true)}
+                                                >
+                                                    Create an account to manage this reservation
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
                                 <div className="border-t pt-4 mt-6">
                                     <div className="bg-green-50 p-4 rounded-md">
                                         <h3 className="font-semibold text-green-800 mb-2">Reservation
-                                            Saved</h3>
+                                                                                          Saved</h3>
                                         <p>Your reservation has been linked to your account. You can
                                            view and manage your reservations from your account page.
                                         </p>
+                                        {isAuthenticated && (
+                                            <Button
+                                                variant="outline"
+                                                className="w-full mt-4"
+                                                onClick={navigateToAccount}
+                                            >
+                                                Go to My Reservations
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             )}

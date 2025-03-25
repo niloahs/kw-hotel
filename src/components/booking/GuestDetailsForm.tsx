@@ -110,7 +110,7 @@ export default function GuestDetailsForm() {
 
             // If account was created, login the user
             if (!isAuthenticated && data.createAccount && data.password) {
-                await login(data.email, data.password, 'guest');
+                await login(data.email, data.password);
             }
 
             // Redirect to confirmation page
