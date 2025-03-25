@@ -3,7 +3,7 @@ import Footer from '@/components/layout/Footer'
 import Navigation from '@/components/Navigation'
 import './globals.css'
 import React from "react";
-import { AuthProvider } from '@/context/AuthContext';
+import { SessionProvider } from '@/components/providers/SessionProvider';
 
 const playfair = Playfair_Display({
     subsets: ['latin'],
@@ -23,13 +23,13 @@ export default function RootLayout({
     return (
         <html lang="en" id="root">
         <body className={`${montserrat.variable} ${playfair.variable} font-sans`}>
-        <AuthProvider>
+        <SessionProvider>
             <Navigation />
             <main>
                 {children}
             </main>
             <Footer />
-        </AuthProvider>
+        </SessionProvider>
         </body>
         </html>
     )
