@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { CreditCard, Info, User } from 'lucide-react';
 
 import {
@@ -35,7 +35,7 @@ import { Separator } from '@/components/ui/separator';
 export default function GuestDetailsForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const {isAuthenticated, user, setUserAndToken} = useAuth();
+    const {user, isAuthenticated, login} = useAuth();
 
     const checkIn = searchParams.get('checkIn');
     const checkOut = searchParams.get('checkOut');
@@ -103,16 +103,14 @@ export default function GuestDetailsForm() {
                     // Don't need account creation if already logged in
                     createAccount: isAuthenticated ? false : data.createAccount,
                     password: (!isAuthenticated && data.createAccount) ? data.password : undefined,
-                    // paymentStatus: "Paid"
                 },
                 // Add flag for authenticated users
                 userAuthenticated: isAuthenticated
             });
 
-            // If token and user data are returned (user created an account), set in auth context
-            if (!isAuthenticated && data.createAccount && response.data.token && response.data.user) {
-                // Use the destructured function from the top of the component
-                setUserAndToken(response.data.user, response.data.token);
+            // If account was created, login the user
+            if (!isAuthenticated && data.createAccount && data.password) {
+                await login(data.email, data.password, 'guest');
             }
 
             // Redirect to confirmation page

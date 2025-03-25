@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { RegisterFormData, registerSchema } from "@/lib/validation-schemas";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { formatPhoneNumber } from '@/lib/utils';
 
 interface RegisterFormProps {
@@ -27,7 +27,7 @@ interface RegisterFormProps {
 }
 
 export default function RegisterForm({onSuccess, onLoginClick, reservationId}: RegisterFormProps) {
-    const { setUserAndToken } = useAuth();
+    const { login } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -48,8 +48,8 @@ export default function RegisterForm({onSuccess, onLoginClick, reservationId}: R
         setError('');
 
         try {
-            console.log("Registration with reservationId:", reservationId);
-            const response = await axios.post('/api/auth/register', {
+            // Register the user
+            await axios.post('/api/register', {
                 firstName: data.firstName,
                 lastName: data.lastName,
                 email: data.email,
@@ -58,12 +58,13 @@ export default function RegisterForm({onSuccess, onLoginClick, reservationId}: R
                 reservationId: reservationId
             });
 
-            // Auto-sign in by using the returned token and user data
-            if (response.data.token && response.data.user) {
-                setUserAndToken(response.data.user, response.data.token);
+            // Login after registration
+            const result = await login(data.email, data.password, 'guest');
+
+            if (result?.error) {
+                throw new Error(result.error);
             }
 
-            // Call success callback
             onSuccess?.();
         } catch (err) {
             if (axios.isAxiosError(err)) {

@@ -1,4 +1,4 @@
-import bcryptjs from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import pg from 'pg';
 
 const { Pool } = pg;
@@ -12,7 +12,7 @@ async function createStaffUser() {
     // Password to hash
     const password = 'password123';
 
-    const passwordHash = await bcryptjs.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
     try {
         // Insert staff record

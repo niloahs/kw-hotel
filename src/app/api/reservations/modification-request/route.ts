@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
-import auth from "@/lib/auth";
+import { auth } from "@/lib/auth";
 
 export async function POST(request: Request) {
     try {
         const {reservationId, requestType, checkInDate, checkOutDate} = await request.json();
 
         // Get current user
-        const user = await auth.getCurrentUser();
-        if (!user) {
+        const session = await auth();
+        if (!session) {
             return NextResponse.json({message: 'Authentication required'}, {status: 401});
         }
 
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
              FROM reservation
              WHERE reservation_id = $1
                AND guest_id = $2`,
-            [reservationId, user.id]
+            [reservationId, session.user.id]
         );
 
         if (reservationCheck.rowCount === 0) {

@@ -130,7 +130,7 @@ export default function ServicesPage() {
                     };
                 }).filter(Boolean);
 
-                await axios.post('/api/serviceCharges', {
+                await axios.post('/api/service-charges', {
                     selectedServices: selectedServiceDetails,
                     reservationId
                 });

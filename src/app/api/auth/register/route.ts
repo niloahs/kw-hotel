@@ -1,11 +1,6 @@
 import { NextResponse } from 'next/server';
-import auth from '@/lib/auth';
-import { hash } from 'bcryptjs';
+import { hash } from 'bcrypt';
 import db from '@/lib/db';
-
-function errorResponse(message: string, status: number) {
-    return NextResponse.json({message}, {status});
-}
 
 export async function POST(request: Request) {
     try {
@@ -110,30 +105,9 @@ export async function POST(request: Request) {
             }
         }
 
-        // Log in the user after successful registration/update
-        const user = await auth.loginUser(email, password, 'guest');
-
-        if (!user) {
-            return NextResponse.json(
-                {message: 'Account created but unable to log in automatically'},
-                {status: 500}
-            );
-        }
-
-        // Generate token
-        const token = auth.generateToken(user);
-        await auth.setAuthCookie(token);
-
+        // Return success - with NextAuth, signing in will happen client-side
         return NextResponse.json({
-            token,
-            user: {
-                id: user.id,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email,
-                phone: user.phone,
-                type: user.type
-            },
+            success: true,
             message: 'Account created successfully'
         });
     } catch (error) {
@@ -144,7 +118,10 @@ export async function POST(request: Request) {
             && error !== null
             && 'code' in error
             && error.code === '23505') {
-            return errorResponse('An account with this email already exists', 400);
+            return NextResponse.json(
+                {message: 'An account with this email already exists'},
+                {status: 400}
+            );
         }
 
         return NextResponse.json(
@@ -153,4 +130,3 @@ export async function POST(request: Request) {
         );
     }
 }
-

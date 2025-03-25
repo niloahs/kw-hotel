@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
-import auth from "@/lib/auth";
 import { createApiError, handleApiError } from "@/lib/api-utils";
+import { auth } from "@/lib/auth";
 
 export async function POST(request: Request) {
     try {
@@ -12,8 +12,8 @@ export async function POST(request: Request) {
         }
 
         // Get current authenticated user
-        const user = await auth.getCurrentUser();
-        if (!user) {
+        const session = await auth();
+        if (!session) {
             throw createApiError('You must be logged in to link a reservation', 401);
         }
 
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
         }
 
         // Check if reservation is already linked to this user
-        if (reservation.guest_id === user.id) {
+        if (reservation.guest_id === session.user.id) {
             // If it's linked but not claimed, update it to claimed
             if (!reservation.is_claimed) {
                 await db.query(`
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         }
 
         // Check if reservation is already linked to another registered user
-        if (reservation.guest_id !== user.id && reservation.guest_is_registered) {
+        if (reservation.guest_id !== session.user.id && reservation.guest_is_registered) {
             throw createApiError('This reservation has already been linked to another account', 400);
         }
 
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
                 SET guest_id   = $1,
                     is_claimed = TRUE
                 WHERE reservation_id = $2
-            `, [user.id, reservation.reservation_id]);
+            `, [session.user.id, reservation.reservation_id]);
         });
 
         return NextResponse.json({

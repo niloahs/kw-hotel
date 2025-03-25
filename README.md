@@ -40,6 +40,8 @@ Environment setup:
 ```bash
 # Create and add this to your .env file
 DATABASE_URL=postgres://postgres:password@localhost:5433/kingwilliam
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=secret
 ````
 
 Quick commands:
