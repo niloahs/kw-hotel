@@ -64,12 +64,10 @@ export const guestDetailsSchema = z.object({
         ),
     createAccount: z.boolean().default(false),
     password: z.string().optional(),
-    paymentCard: z.string().min(1, 'Please enter valid payment card'),
-    CVV: z.string().min(3, 'CVV must be 3 digits'),
-    CardName: z.string().min(1, 'Name on card is required'),
-    BPC: z.string().min(6, 'Postal code is required'),
-    cardYear: z.string().optional(),
-    cardMonth: z.string().optional()
+    paymentCard: z.string().min(13, 'Please enter a valid payment card number'),
+    CVV: z.string().min(3, 'CVV must be 3 digits').max(3, 'CVV must be 3 digits'),
+    cardMonth: z.string().min(1, 'Month is required'),
+    cardYear: z.string().min(1, 'Year is required')
 }).refine(data => !data.createAccount || (data.password && data.password.length >= 6), {
     message: 'Password must be at least 6 characters when creating an account',
     path: ['password']
