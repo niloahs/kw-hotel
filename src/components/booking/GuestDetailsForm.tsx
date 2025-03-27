@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
 import { Info } from 'lucide-react';
+import { formatCardNumber } from '@/lib/payment-utils';
 
 import {
     Form,
@@ -278,10 +279,18 @@ export default function GuestDetailsForm() {
                                                 <Input
                                                     placeholder="0000 0000 0000 0000"
                                                     {...field}
+                                                    onChange={(e) => {
+                                                        const formatted = formatCardNumber(e.target.value);
+                                                        field.onChange(formatted);
+                                                    }}
+                                                    maxLength={19} // 16 digits + 3 spaces
                                                     disabled={isSubmitting}
-                                                    // className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
+                                                    className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
                                                 />
                                             </FormControl>
+                                            <FormDescription>
+                                                Enter your 16-digit card number
+                                            </FormDescription>
                                             <FormMessage />
                                         </FormItem>
                                     )}
