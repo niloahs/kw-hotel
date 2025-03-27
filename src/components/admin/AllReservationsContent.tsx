@@ -7,6 +7,7 @@ import ReservationModal from '@/components/modals/ReservationModal';
 import axios from 'axios';
 import { UserReservation } from '@/types';
 import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 
 export default function AllReservationsContent() {
     const [reservations, setReservations] = useState<UserReservation[]>([]);
@@ -15,22 +16,24 @@ export default function AllReservationsContent() {
     const [selectedReservation, setSelectedReservation] = useState<UserReservation | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    useEffect(() => {
-        const fetchReservations = async () => {
-            try {
-                const response = await axios.get('/api/reservations/all');
-                setReservations(response.data);
-            } catch (error) {
-                if (axios.isAxiosError(error)) {
-                    setError(error.response?.data?.message || 'An error occurred while retrieving reservations');
-                } else {
-                    setError('An unexpected error occurred while retrieving reservations');
-                }
-            } finally {
-                setLoading(false);
+    const fetchReservations = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.get('/api/reservations/all');
+            setReservations(response.data);
+            setError('');
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                setError(error.response?.data?.message || 'An error occurred while retrieving reservations');
+            } else {
+                setError('An unexpected error occurred while retrieving reservations');
             }
-        };
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchReservations();
     }, []);
 
@@ -44,8 +47,72 @@ export default function AllReservationsContent() {
         setIsModalOpen(false);
     };
 
+    const handleApproveReject = () => {
+        // Refresh reservations after approve/reject
+        fetchReservations();
+    };
+
     const pendingReservations = reservations.filter((reservation) => reservation.requestStatus === 'Pending');
-    const confirmedReservations = reservations.filter((reservation) => reservation.requestStatus === 'Approved');
+    const confirmedReservations = reservations.filter((reservation) => reservation.status === 'Confirmed' && reservation.requestStatus !== 'Pending');
+
+    // Reusable reservation card component
+    const ReservationCard = ({ reservation }: { reservation: UserReservation }) => (
+        <Card
+            key={reservation.reservationId}
+            className="border shadow-lg rounded-lg overflow-hidden cursor-pointer hover:border-primary transition-colors"
+            onClick={() => openModal(reservation)}
+        >
+            <CardHeader className={`p-4 ${reservation.requestStatus === 'Pending' ? 'bg-amber-50' : 'bg-gray-100'}`}>
+                <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg font-bold text-gray-800">{reservation.guestName}</CardTitle>
+                    {reservation.requestStatus === 'Pending' && (
+                        <Badge className="bg-amber-100 text-amber-800 border-amber-200">
+                            Pending
+                        </Badge>
+                    )}
+                </div>
+                <CardDescription className="text-sm text-gray-600">
+                    Room: <span className="font-medium">{reservation.roomNumber} - {reservation.roomType}</span>
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4">
+                <div className="mb-2">
+                    <p className="text-sm text-gray-600">
+                        <span className="font-semibold">Status: </span>
+                        {reservation.status}
+                        {reservation.requestStatus === 'Pending' && reservation.changeType && (
+                            <span className="text-amber-600 ml-1">
+                                ({reservation.changeType === 'DateChange' ? 'Date Change' : 'Cancellation'} Request)
+                            </span>
+                        )}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                        <span className="font-semibold">Check-in:</span> {format(new Date(reservation.checkInDate), 'MMM d, yyyy')}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                        <span className="font-semibold">Check-out:</span> {format(new Date(reservation.checkOutDate), 'MMM d, yyyy')}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                        <span className="font-semibold">Total:</span> ${reservation.totalAmount}
+                    </p>
+                </div>
+            </CardContent>
+        </Card>
+    );
+
+    const ReservationGrid = ({ reservations }: { reservations: UserReservation[] }) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {reservations.length > 0 ? (
+                reservations.map((reservation) => (
+                    <ReservationCard key={reservation.reservationId} reservation={reservation} />
+                ))
+            ) : (
+                <div className="col-span-full text-center py-12 text-gray-500">
+                    No reservations found.
+                </div>
+            )}
+        </div>
+    );
 
     if (loading) {
         return <div className="container mx-auto py-24 px-4">Loading reservations...</div>;
@@ -62,145 +129,25 @@ export default function AllReservationsContent() {
                 <TabsList>
                     <TabsTrigger value="all">All</TabsTrigger>
                     <TabsTrigger value="confirmed">Confirmed</TabsTrigger>
-                    <TabsTrigger value="pending">Pending</TabsTrigger>
+                    <TabsTrigger value="pending">
+                        Pending
+                        {pendingReservations.length > 0 && (
+                            <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                                {pendingReservations.length}
+                            </span>
+                        )}
+                    </TabsTrigger>
                 </TabsList>
                 <TabsContent value="all">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {reservations.map((reservation: UserReservation) => (
-                            <Card
-                                key={reservation.reservationId}
-                                className="border shadow-lg rounded-lg overflow-hidden cursor-pointer"
-                                onClick={() => openModal(reservation)}
-                            >
-                                <CardHeader className="bg-gray-100 p-4">
-                                    <CardTitle
-                                        className="text-lg font-bold text-gray-800">{reservation.guestName}</CardTitle>
-                                    <CardDescription className="text-sm text-gray-600">
-                                        Room: <span
-                                        className="font-medium">{reservation.roomNumber} - {reservation.roomType}</span>
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="p-4">
-                                    <div className="mb-2">
-                                        <p className="text-sm text-gray-600">
-                                            <span className="font-semibold">Status: </span>
-                                            {reservation.requestStatus === 'Approved'
-                                                ? `${reservation.requestStatus} & ${reservation.status}`
-                                                : reservation.requestStatus === 'Pending'
-                                                    ? reservation.requestStatus
-                                                    : reservation.status}
-                                        </p>
-                                        <p className="text-sm text-gray-600">
-                                            <span
-                                                className="font-semibold">Check-in:</span> {format(new Date(reservation.checkInDate), 'PPP')}
-                                        </p>
-                                        <p className="text-sm text-gray-600">
-                                            <span
-                                                className="font-semibold">Check-out:</span> {format(new Date(reservation.checkOutDate), 'PPP')}
-                                        </p>
-                                        <p className="text-sm text-gray-600">
-                                            <span
-                                                className="font-semibold">Total Amount:</span> ${reservation.totalAmount}
-                                        </p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+                    <ReservationGrid reservations={reservations} />
                 </TabsContent>
 
                 <TabsContent value="confirmed">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {confirmedReservations.length > 0 ? (
-                            confirmedReservations.map((reservation: UserReservation) => (
-                                <Card
-                                    key={reservation.reservationId}
-                                    className="border shadow-lg rounded-lg overflow-hidden cursor-pointer"
-                                    onClick={() => openModal(reservation)}
-                                >
-                                    <CardHeader className="bg-gray-100 p-4">
-                                        <CardTitle
-                                            className="text-lg font-bold text-gray-800">{reservation.guestName}</CardTitle>
-                                        <CardDescription className="text-sm text-gray-600">
-                                            Room: <span
-                                            className="font-medium">{reservation.roomNumber} - {reservation.roomType}</span>
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="p-4">
-                                        <div className="mb-2">
-                                            <p className="text-sm text-gray-600">
-                                                <span
-                                                    className="font-semibold">Status:</span> {reservation.requestStatus} & {reservation.status}
-                                            </p>
-                                            <p className="text-sm text-gray-600">
-                                                <span
-                                                    className="font-semibold">Check-in:</span> {format(new Date(reservation.checkInDate), 'PPP')}
-                                            </p>
-                                            <p className="text-sm text-gray-600">
-                                                <span
-                                                    className="font-semibold">Check-out:</span> {format(new Date(reservation.checkOutDate), 'PPP')}
-                                            </p>
-                                            <p className="text-sm text-gray-600">
-                                                <span
-                                                    className="font-semibold">Total Amount:</span> ${reservation.totalAmount}
-                                            </p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))
-                        ) : (
-                            <div className="col-span-full text-center py-12 text-gray-500">
-                                No confirmed reservations found.
-                            </div>
-                        )}
-                    </div>
+                    <ReservationGrid reservations={confirmedReservations} />
                 </TabsContent>
 
                 <TabsContent value="pending">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {pendingReservations.length > 0 ? (
-                            pendingReservations.map((reservation: UserReservation) => (
-                                <Card
-                                    key={reservation.reservationId}
-                                    className="border shadow-lg rounded-lg overflow-hidden cursor-pointer"
-                                    onClick={() => openModal(reservation)}
-                                >
-                                    <CardHeader className="bg-gray-100 p-4">
-                                        <CardTitle
-                                            className="text-lg font-bold text-gray-800">{reservation.guestName}</CardTitle>
-                                        <CardDescription className="text-sm text-gray-600">
-                                            Room: <span
-                                            className="font-medium">{reservation.roomNumber} - {reservation.roomType}</span>
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="p-4">
-                                        <div className="mb-2">
-                                            <p className="text-sm text-gray-600">
-                                                <span
-                                                    className="font-semibold">Status:</span> {reservation.requestStatus}
-                                            </p>
-                                            <p className="text-sm text-gray-600">
-                                                <span
-                                                    className="font-semibold">Check-in:</span> {format(new Date(reservation.checkInDate), 'PPP')}
-                                            </p>
-                                            <p className="text-sm text-gray-600">
-                                                <span
-                                                    className="font-semibold">Check-out:</span> {format(new Date(reservation.checkOutDate), 'PPP')}
-                                            </p>
-                                            <p className="text-sm text-gray-600">
-                                                <span
-                                                    className="font-semibold">Total Amount:</span> ${reservation.totalAmount}
-                                            </p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))
-                        ) : (
-                            <div className="col-span-full text-center py-12 text-gray-500">
-                                No pending reservations found.
-                            </div>
-                        )}
-                    </div>
+                    <ReservationGrid reservations={pendingReservations} />
                 </TabsContent>
             </Tabs>
 
@@ -209,6 +156,7 @@ export default function AllReservationsContent() {
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 reservation={selectedReservation}
+                onApproveReject={handleApproveReject}
             />
         </div>
     );

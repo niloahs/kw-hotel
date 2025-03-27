@@ -13,19 +13,39 @@ export async function POST(req: Request): Promise<NextResponse> {
     }
 
     const {reservationId} = await req.json();
-    console.log('Received reservation:', reservationId);
+    console.log('Processing reservation:', reservationId);
 
-    const changeTypeResult = await db.query(
-        `SELECT change_type
-         FROM reservation_change
-         WHERE reservation_id = $1`,
-        [reservationId]
-    );
-    const changeType = changeTypeResult.rows[0]?.change_type;
+    try {
+        // Get the change type first
+        const changeTypeResult = await db.query(
+            `SELECT change_type, reservation_change_id
+             FROM reservation_change
+             WHERE reservation_id = $1
+               AND request_status = 'Pending'
+             ORDER BY reservation_change_id DESC
+             LIMIT 1`,
+            [reservationId]
+        );
 
-    if (changeType === 'Cancellation') {
-        try {
-            // Delete the reservation from the reservation table
+        if (changeTypeResult.rowCount === 0) {
+            return NextResponse.json({message: "No pending request found"}, {status: 404});
+        }
+
+        const changeType = changeTypeResult.rows[0]?.change_type;
+        const changeId = changeTypeResult.rows[0]?.reservation_change_id;
+
+        if (changeType === 'Cancellation') {
+            // Get room ID before deleting reservation
+            const roomResult = await db.query(
+                `SELECT room_id
+                 FROM reservation
+                 WHERE reservation_id = $1`,
+                [reservationId]
+            );
+
+            const roomId = roomResult.rows[0]?.room_id;
+
+            // Delete the reservation
             await db.query(
                 `DELETE
                  FROM reservation
@@ -33,69 +53,64 @@ export async function POST(req: Request): Promise<NextResponse> {
                 [reservationId]
             );
 
-            // Update the request status in the reservation change table to "Approved"
+            // Make sure the room is available again
+            if (roomId) {
+                await db.query(
+                    `UPDATE room
+                     SET status = 'Available'
+                     WHERE room_id = $1`,
+                    [roomId]
+                );
+            }
+
+            // Delete the change request
             await db.query(
-                `UPDATE reservation_change
-                 SET request_status = $1
-                 WHERE reservation_id = $2`,
-                ["Approved", reservationId]
+                `DELETE
+                 FROM reservation_change
+                 WHERE reservation_change_id = $1`,
+                [changeId]
             );
 
             return NextResponse.json({message: "Reservation cancelled successfully"}, {status: 200});
-        } catch (error) {
-            console.error(error);
-            return NextResponse.json({error: "Internal Server Error"}, {status: 500});
-        }
-    } else {
-        try {
-            console.log('Received reservation:', reservationId);
-
-            // Retrieve the new check-in date from the reservation_change table
-            const newCheckInDateResult = await db.query(
-                `SELECT new_check_in_date
+        } else if (changeType === 'DateChange') {
+            // Get the new dates
+            const dateResult = await db.query(
+                `SELECT new_check_in_date, new_check_out_date
                  FROM reservation_change
-                 WHERE reservation_id = $1`,
-                [reservationId]
+                 WHERE reservation_change_id = $1`,
+                [changeId]
             );
-            console.log('newCheckInDateResult:', newCheckInDateResult);
-            const new_check_in_date = newCheckInDateResult.rows[0]?.new_check_in_date;
 
-            // Retrieve the new check-out date from the reservation_change table
-            const newCheckOutDateResult = await db.query(
-                `SELECT new_check_out_date
-                 FROM reservation_change
-                 WHERE reservation_id = $1`,
-                [reservationId]
-            );
-            console.log('newCheckOutDateResult:', newCheckOutDateResult);
-            const new_check_out_date = newCheckOutDateResult.rows[0]?.new_check_out_date;
-
-            if (!new_check_in_date || !new_check_out_date) {
-                console.log('Reservation change not found');
-                return NextResponse.json({error: "Reservation change not found"}, {status: 404});
+            if (dateResult.rowCount === 0) {
+                return NextResponse.json({message: "Date change details not found"}, {status: 404});
             }
 
-            // Update the reservation table with the changes
+            const newCheckInDate = dateResult.rows[0].new_check_in_date;
+            const newCheckOutDate = dateResult.rows[0].new_check_out_date;
+
+            // Update the reservation with new dates
             await db.query(
                 `UPDATE reservation
                  SET check_in_date  = $1,
                      check_out_date = $2
                  WHERE reservation_id = $3`,
-                [new_check_in_date, new_check_out_date, reservationId]
+                [newCheckInDate, newCheckOutDate, reservationId]
             );
 
-            // Update the request status in the reservation change table to "Approved"
+            // Delete the change request after approval
             await db.query(
-                `UPDATE reservation_change
-                 SET request_status = $1
-                 WHERE reservation_id = $2`,
-                ["Approved", reservationId]
+                `DELETE
+                 FROM reservation_change
+                 WHERE reservation_change_id = $1`,
+                [changeId]
             );
 
-            return NextResponse.json({message: "Reservation updated successfully"}, {status: 200});
-        } catch (error) {
-            console.error(error);
-            return NextResponse.json({error: "Internal Server Error"}, {status: 500});
+            return NextResponse.json({message: "Reservation dates updated successfully"}, {status: 200});
+        } else {
+            return NextResponse.json({message: "Invalid change type"}, {status: 400});
         }
+    } catch (error) {
+        console.error(error);
+        return NextResponse.json({error: "Internal Server Error"}, {status: 500});
     }
 }

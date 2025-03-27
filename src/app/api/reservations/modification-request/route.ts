@@ -25,6 +25,22 @@ export async function POST(request: Request) {
             return NextResponse.json({message: 'Reservation not found'}, {status: 404});
         }
 
+        // Check if there's already a pending request for this reservation
+        const pendingCheck = await db.query(
+            `SELECT *
+             FROM reservation_change
+             WHERE reservation_id = $1
+               AND request_status = 'Pending'`,
+            [reservationId]
+        );
+
+        if (pendingCheck.rowCount! > 0) {
+            return NextResponse.json(
+                {message: 'This reservation already has a pending change request'},
+                {status: 409} // Conflict
+            );
+        }
+
         const reservation = reservationCheck.rows[0];
 
         // Create change request with pending status
