@@ -58,20 +58,13 @@ export interface UserReservation extends Reservation {
     roomNumber: string;
     roomType: string;
     requestStatus: string;
+    changeType?: 'DateChange' | 'Cancellation';
 }
 
-// Service Types
-// export interface Service {
-//     serviceId: number;
-//     serviceName: string;
-//     basePrice: number;
-//     isExternal: boolean;
-// }
 
 export interface Service {
     service_id: number;
     service_name: string;
-    
     base_price: number;
   }
 
