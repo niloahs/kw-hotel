@@ -24,16 +24,17 @@ import { cn } from '@/lib/utils';
 import { ModificationRequest, modificationSchema } from "@/lib/validation-schemas";
 import { Reservation } from '@/types';
 import Navigation from '@/components/Navigation';
+import { useToast } from "@/hooks/use-toast";
 
 export default function ModifyReservationPage() {
     const params = useParams();
     const router = useRouter();
     const reservationId = params.id;
+    const {toast} = useToast();
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState(false);
     const [reservation, setReservation] = useState<Reservation | null>(null);
 
     const form = useForm<ModificationRequest>({
@@ -44,7 +45,6 @@ export default function ModifyReservationPage() {
     });
 
     const requestType = form.watch('requestType');
-    const checkInDate = form.watch('checkInDate');
 
     // Fetch reservation details
     useEffect(() => {
@@ -77,12 +77,15 @@ export default function ModifyReservationPage() {
                 checkOutDate: data.checkOutDate ? format(data.checkOutDate, 'yyyy-MM-dd') : undefined
             });
 
-            setSuccess(true);
+            // Show success toast
+            toast({
+                title: "Request Submitted",
+                description: "Your request has been submitted successfully. We'll review it and get back to you soon.",
+                variant: "default",
+            });
 
-            // Redirect back to account page after successful submission
-            setTimeout(() => {
-                router.push('/account?tab=reservations');
-            }, 2000);
+            router.push('/account?tab=reservations');
+
         } catch (err) {
             if (axios.isAxiosError(err)) {
                 setError(err.response?.data?.message || 'Failed to submit request');
@@ -116,14 +119,6 @@ export default function ModifyReservationPage() {
                             Return to My Reservations
                         </Button>
                     </div>
-                ) : success ? (
-                    <Alert className="bg-green-50 text-green-700 border-green-200 mb-8">
-                        <AlertDescription>
-                            Your request has been submitted successfully. We&#39;ll review it and
-                            get back to you soon.
-                            Redirecting back to your account...
-                        </AlertDescription>
-                    </Alert>
                 ) : (
                     <div className="bg-white shadow-md rounded-lg p-6">
                         <div className="mb-6 border-b pb-4">
@@ -210,7 +205,6 @@ export default function ModifyReservationPage() {
                                                                 selected={field.value}
                                                                 onSelect={field.onChange}
                                                                 disabled={(date) => date < new Date()}
-                                                                initialFocus
                                                             />
                                                         </PopoverContent>
                                                     </Popover>
@@ -255,7 +249,6 @@ export default function ModifyReservationPage() {
                                                                     const checkIn = form.getValues('checkInDate');
                                                                     return checkIn ? date <= checkIn : date < new Date();
                                                                 }}
-                                                                initialFocus
                                                             />
                                                         </PopoverContent>
                                                     </Popover>

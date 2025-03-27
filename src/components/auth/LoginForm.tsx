@@ -70,6 +70,7 @@ export default function LoginForm({onSuccess}: LoginFormProps) {
                                     placeholder="your@email.com"
                                     {...field}
                                     disabled={isLoading}
+                                    tabIndex={1}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -89,6 +90,7 @@ export default function LoginForm({onSuccess}: LoginFormProps) {
                                     placeholder="********"
                                     {...field}
                                     disabled={isLoading}
+                                    tabIndex={2}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -106,6 +108,7 @@ export default function LoginForm({onSuccess}: LoginFormProps) {
                     type="submit"
                     className="w-full"
                     disabled={isLoading}
+                    tabIndex={3}
                 >
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isLoading ? 'Signing in...' : 'Sign In'}

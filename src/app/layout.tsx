@@ -4,6 +4,7 @@ import Navigation from '@/components/Navigation'
 import './globals.css'
 import React from "react";
 import { SessionProvider } from '@/components/providers/SessionProvider';
+import { Toaster } from '@/components/ui/toaster'
 
 const playfair = Playfair_Display({
     subsets: ['latin'],
@@ -29,6 +30,7 @@ export default function RootLayout({
                 {children}
             </main>
             <Footer />
+            <Toaster />
         </SessionProvider>
         </body>
         </html>

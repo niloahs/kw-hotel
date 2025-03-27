@@ -75,6 +75,7 @@ export default function LinkReservationForm({onSuccess}: LinkReservationFormProp
                                 <Input
                                     placeholder="Enter your confirmation code"
                                     {...field}
+                                    tabIndex={1}
                                     disabled={isLoading}
                                 />
                             </FormControl>
@@ -93,6 +94,7 @@ export default function LinkReservationForm({onSuccess}: LinkReservationFormProp
                                 <Input
                                     placeholder="Enter the email used for reservation"
                                     {...field}
+                                    tabIndex={2}
                                     disabled={isLoading}
                                 />
                             </FormControl>
@@ -118,6 +120,7 @@ export default function LinkReservationForm({onSuccess}: LinkReservationFormProp
                     type="submit"
                     className="w-full"
                     disabled={isLoading}
+                    tabIndex={3}
                 >
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isLoading ? 'Linking...' : 'Link Reservation'}

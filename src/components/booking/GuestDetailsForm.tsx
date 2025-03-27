@@ -31,6 +31,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { toast } from "@/hooks/use-toast";
 
 export default function GuestDetailsForm() {
     const router = useRouter();
@@ -115,15 +116,28 @@ export default function GuestDetailsForm() {
 
             // Redirect to confirmation page
             router.push(`/reservations/services?id=${response.data.reservationId}`);
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                setError(error.response?.data?.message || 'An error occurred while creating your reservation');
+        } catch (err) {
+            if (axios.isAxiosError(err)) {
+                // Check for 409 conflict status
+                if (err.response?.status === 409) {
+                    toast({
+                        title: "Room Unavailable",
+                        description: "Sorry, this room is no longer available for the selected dates. " +
+                            "Please choose another room or dates.",
+                        variant: "destructive",
+                    });
+
+                    // Redirect back to search
+                    router.push('/reservations');
+                } else {
+                    setError(err.response?.data?.message || 'An error occurred while creating your reservation');
+                }
             } else {
                 setError('An unexpected error occurred while creating your reservation');
             }
             setIsSubmitting(false);
         }
-    }
+    };
 
     return (
         <Card className="shadow-md">
@@ -164,6 +178,7 @@ export default function GuestDetailsForm() {
                                                 <Input
                                                     placeholder="John"
                                                     {...field}
+                                                    tabIndex={1}
                                                     disabled={isSubmitting}
                                                     className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
                                                 />
@@ -183,6 +198,7 @@ export default function GuestDetailsForm() {
                                                 <Input
                                                     placeholder="Doe"
                                                     {...field}
+                                                    tabIndex={2}
                                                     disabled={isSubmitting}
                                                     className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
                                                 />
@@ -204,6 +220,7 @@ export default function GuestDetailsForm() {
                                                 <Input
                                                     placeholder="your@email.com"
                                                     {...field}
+                                                    tabIndex={3}
                                                     disabled={isSubmitting}
                                                     className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
                                                 />
@@ -223,6 +240,7 @@ export default function GuestDetailsForm() {
                                                 <Input
                                                     placeholder="123-456-7890"
                                                     {...field}
+                                                    tabIndex={4}
                                                     disabled={isSubmitting}
                                                     className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
                                                 />
@@ -253,6 +271,7 @@ export default function GuestDetailsForm() {
                                             <Input
                                                 placeholder="0000 0000 0000 0000"
                                                 {...field}
+                                                tabIndex={5}
                                                 disabled={isSubmitting}
                                             />
                                         </FormControl>
@@ -277,7 +296,7 @@ export default function GuestDetailsForm() {
                                                                 value={field.value}
                                                                 disabled={isSubmitting}
                                                             >
-                                                                <SelectTrigger>
+                                                                <SelectTrigger tabIndex={6}>
                                                                     <SelectValue
                                                                         placeholder="Month" />
                                                                 </SelectTrigger>
@@ -308,7 +327,7 @@ export default function GuestDetailsForm() {
                                                                 value={field.value}
                                                                 disabled={isSubmitting}
                                                             >
-                                                                <SelectTrigger>
+                                                                <SelectTrigger tabIndex={7}>
                                                                     <SelectValue
                                                                         placeholder="Year" />
                                                                 </SelectTrigger>
@@ -342,6 +361,7 @@ export default function GuestDetailsForm() {
                                                         placeholder="123"
                                                         maxLength={3}
                                                         {...field}
+                                                        tabIndex={8}
                                                         disabled={isSubmitting}
                                                     />
                                                 </FormControl>
@@ -367,6 +387,7 @@ export default function GuestDetailsForm() {
                                                 <Checkbox
                                                     checked={field.value}
                                                     onCheckedChange={field.onChange}
+                                                    tabIndex={9}
                                                     disabled={isSubmitting}
                                                 />
                                             </FormControl>
@@ -396,6 +417,7 @@ export default function GuestDetailsForm() {
                                                 type="password"
                                                 placeholder="Choose a password"
                                                 {...field}
+                                                tabIndex={10}
                                                 disabled={isSubmitting}
                                             />
                                         </FormControl>
@@ -419,6 +441,7 @@ export default function GuestDetailsForm() {
                                 type="submit"
                                 className="w-full py-6 text-lg"
                                 disabled={isSubmitting}
+                                tabIndex={11}
                             >
                                 {isSubmitting ? 'Processing...' : 'Complete Reservation'}
                             </Button>
