@@ -25,7 +25,7 @@ export const registerSchema = z.object({
             {message: 'Please enter a valid 10-digit phone number'}
         ),
     password: z.string().min(6, 'Password must be at least 6 characters'),
-    confirmPassword: z.string().min(6, 'Please confirm your password')
+    confirmPassword: z.string().min(6, 'Please confirm your password').optional()
 }).refine(data => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ['confirmPassword']
@@ -64,8 +64,8 @@ export const guestDetailsSchema = z.object({
             { message: 'Please enter a valid phone number'}
         ),
     createAccount: z.boolean().default(false),
-    password: z.string().optional(),
-    CardName: z.string().min(1, 'Name on card is required'),
+    password: z.string().min(6, 'Password must be at least 6 characters').optional(),
+    // CardName: z.string().min(1, 'Name on card is required'),
     paymentCard: z.string()
         .min(1, 'Card number is required')
         .refine(
@@ -78,10 +78,10 @@ export const guestDetailsSchema = z.object({
         .min(3, 'CVV must be 3 digits')
         .max(3, 'CVV must be 3 digits')
         .regex(/^\d{3}$/, 'CVV must contain only numbers'),
-    BPC: z.string()
-        .min(6, 'Postal code must be 6 characters')
-        .max(6, 'Postal code must be 6 characters')
-        .regex(/^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d$/i, 'Please enter a valid Canadian postal code')
+    // BPC: z.string()
+        // .min(6, 'Postal code must be 6 characters')
+        // .max(6, 'Postal code must be 6 characters')
+        // .regex(/^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d$/i, 'Please enter a valid Canadian postal code')
 }).refine(
     (data) => {
         // If createAccount is true, password is required

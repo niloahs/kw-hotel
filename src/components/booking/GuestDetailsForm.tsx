@@ -272,11 +272,19 @@ export default function GuestDetailsForm() {
                                             <Input
                                                 placeholder="0000 0000 0000 0000"
                                                 {...field}
-                                                tabIndex={5}
+                                                onChange={(e) => {
+                                                    const formatted = formatCardNumber(e.target.value);
+                                                    field.onChange(formatted);
+                                                }}
+                                                maxLength={19} // 16 digits + 3 spaces
                                                 disabled={isSubmitting}
+                                                className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
+                                                tabIndex={5}
                                             />
                                         </FormControl>
-                                        <FormMessage />
+                                        <FormDescription>
+                                                Enter your 16-digit card number
+                                            </FormDescription>
                                     </FormItem>
                                 )}
                             />
