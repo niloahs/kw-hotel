@@ -5,8 +5,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
-import { useAuth } from '@/context/AuthContext';
-import { Info } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { CreditCard, Info, User } from 'lucide-react';
 import { formatCardNumber } from '@/lib/payment-utils';
 
 import {
@@ -21,14 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GuestDetailsFormData, guestDetailsSchema } from "@/lib/validation-schemas";
 import {
@@ -38,11 +31,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { toast } from "@/hooks/use-toast";
 
 export default function GuestDetailsForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const {isAuthenticated, user, setUserAndToken} = useAuth();
+    const {user, isAuthenticated, login} = useAuth();
 
     const checkIn = searchParams.get('checkIn');
     const checkOut = searchParams.get('checkOut');
@@ -60,12 +55,10 @@ export default function GuestDetailsForm() {
             phone: '',
             createAccount: false,
             password: '',
-            CardName: '',
             paymentCard: '',
             cardMonth: '',
             cardYear: '',
             CVV: '',
-            BPC: ''
         }
     });
 
@@ -112,332 +105,320 @@ export default function GuestDetailsForm() {
                     // Don't need account creation if already logged in
                     createAccount: isAuthenticated ? false : data.createAccount,
                     password: (!isAuthenticated && data.createAccount) ? data.password : undefined,
-                    // paymentStatus: "Paid"
                 },
                 // Add flag for authenticated users
                 userAuthenticated: isAuthenticated
             });
 
-            // If token and user data are returned (user created an account), set in auth context
-            if (!isAuthenticated && data.createAccount && response.data.token && response.data.user) {
-                // Use the destructured function from the top of the component
-                setUserAndToken(response.data.user, response.data.token);
+            // If account was created, login the user
+            if (!isAuthenticated && data.createAccount && data.password) {
+                await login(data.email, data.password);
             }
 
             // Redirect to confirmation page
-            router.push(`/reservations/confirmation?id=${response.data.reservationId}`);
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                setError(error.response?.data?.message || 'An error occurred while creating your reservation');
+            router.push(`/reservations/services?id=${response.data.reservationId}`);
+        } catch (err) {
+            if (axios.isAxiosError(err)) {
+                // Check for 409 conflict status
+                if (err.response?.status === 409) {
+                    toast({
+                        title: "Room Unavailable",
+                        description: "Sorry, this room is no longer available for the selected dates. " +
+                            "Please choose another room or dates.",
+                        variant: "destructive",
+                    });
+
+                    // Redirect back to search
+                    router.push('/reservations');
+                } else {
+                    setError(err.response?.data?.message || 'An error occurred while creating your reservation');
+                }
             } else {
                 setError('An unexpected error occurred while creating your reservation');
             }
             setIsSubmitting(false);
         }
-    }
+    };
 
     return (
-        <Card>
+        <Card className="shadow-md">
             <CardHeader>
-                <CardTitle>Guest Information</CardTitle>
+                <CardTitle className="text-2xl">Complete Your Reservation</CardTitle>
                 <CardDescription>
                     {isAuthenticated
-                        ? "Confirm your details to complete your reservation"
+                        ? "Confirm your details and payment information"
                         : "Enter your details to complete your reservation"}
                 </CardDescription>
             </CardHeader>
-            <CardContent className="p-4 pt-0">
+            <CardContent className="p-6">
                 {isAuthenticated && (
-                    <Card className="bg-blue-50 border-blue-200 py-2 mb-6">
-                        <CardContent className="flex items-center space-x-2 pb-1 px-4">
-                            <Info className="text-blue-600" />
-                            <p className="text-blue-600 text-sm text-left">
-                                Fields are pre-filled from your account information.
-                            </p>
-                        </CardContent>
-                    </Card>
+                    <Alert className="bg-blue-50 border-blue-200 mb-6">
+                        <Info className="h-4 w-4 text-blue-600" />
+                        <AlertDescription className="text-blue-600 text-sm">
+                            Fields are pre-filled from your account information.
+                        </AlertDescription>
+                    </Alert>
                 )}
 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormField
-                                control={form.control}
-                                name="firstName"
-                                render={({field}) => (
-                                    <FormItem>
-                                        <FormLabel>First Name</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                placeholder="John"
-                                                {...field}
-                                                disabled={isSubmitting}
-                                                className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="lastName"
-                                render={({field}) => (
-                                    <FormItem>
-                                        <FormLabel>Last Name</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                placeholder="Doe"
-                                                {...field}
-                                                disabled={isSubmitting}
-                                                className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        <FormField
-                            control={form.control}
-                            name="email"
-                            render={({field}) => (
-                                <FormItem>
-                                    <FormLabel>Email</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            placeholder="your@email.com"
-                                            {...field}
-                                            disabled={isSubmitting}
-                                            className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        {/* In GuestDetailsForm.tsx */}
-                        <FormField
-                            control={form.control}
-                            name="phone"
-                            render={({field}) => (
-                                <FormItem>
-                                    <FormLabel>Phone</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            placeholder="123-456-7890"
-                                            {...field}
-                                            disabled={isSubmitting}
-                                            className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>
-                                Payment method
-                                </CardTitle>
-                                <CardDescription>
-                                    Enter Your card information to proceed
-                                </CardDescription>
-                                
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0">
-
-                            <FormField
-                                        control={form.control}
-                                        name="CardName"
-                                        render={({field}) => (
-                                            <FormItem>
-                                                <FormLabel>Name on Card</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder="John Doe"
-                                                        {...field}
-                                                        disabled={isSubmitting}
-                                                        // className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                            <FormField
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                        {/* Guest Information Section */}
+                        <div>
+                            <div className="flex items-center gap-2 mb-4">
+                                <User className="h-5 w-5 text-gray-500" />
+                                <h3 className="text-lg font-medium">Guest Information</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <FormField
                                     control={form.control}
-                                    name="paymentCard"
-                                    render={({ field }) => (
+                                    name="firstName"
+                                    render={({field}) => (
                                         <FormItem>
-                                            <FormLabel>Debit/Credit card number</FormLabel>
+                                            <FormLabel>First Name</FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    placeholder="0000 0000 0000 0000"
+                                                    placeholder="John"
                                                     {...field}
-                                                    onChange={(e) => {
-                                                        const formatted = formatCardNumber(e.target.value);
-                                                        field.onChange(formatted);
-                                                    }}
-                                                    maxLength={19} // 16 digits + 3 spaces
+                                                    tabIndex={1}
                                                     disabled={isSubmitting}
                                                     className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
                                                 />
                                             </FormControl>
-                                            <FormDescription>
-                                                Enter your 16-digit card number
-                                            </FormDescription>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
 
+                                <FormField
+                                    control={form.control}
+                                    name="lastName"
+                                    render={({field}) => (
+                                        <FormItem>
+                                            <FormLabel>Last Name</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Doe"
+                                                    {...field}
+                                                    tabIndex={2}
+                                                    disabled={isSubmitting}
+                                                    className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Card Month Field */}   
-                                <FormField 
-                                control={form.control}
-                                name="cardMonth"
-                                render={({ field }) => (
-                                    <FormItem className="w-full">
-                                        <FormLabel>Expiration date</FormLabel>
-                                        <FormControl>
-                                            <Select onValueChange={field.onChange}>
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Month" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12].map((num) => (
-                                                        <SelectItem key={num} value={num.toString()}>
-                                                            {num < 10 ? "0" : ""}
-                                                            {num}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </FormControl>
-                                        <FormMessage className="mt-1 text-sm" />
-                                    </FormItem>
-                                )}
-                            />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <FormField
+                                    control={form.control}
+                                    name="email"
+                                    render={({field}) => (
+                                        <FormItem>
+                                            <FormLabel>Email</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="your@email.com"
+                                                    {...field}
+                                                    tabIndex={3}
+                                                    disabled={isSubmitting}
+                                                    className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
 
-                            {/* Card Year Field */}
-                            <FormField
-                                control={form.control}
-                                name="cardYear"
-                                render={({ field }) => (
-                                    <FormItem className="w-full mt-8">
-                                        <FormControl>
-                                            <Select onValueChange={field.onChange}>
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Year" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {[2025, 2026, 2027, 2028, 2029, 2030].map((num) => (
-                                                        <SelectItem key={num} value={num.toString()}>
-                                                            {num}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </FormControl>
-                                        <FormMessage className="mt-1 text-sm text-red-500" />
-                                    </FormItem>
-                                )}
-                            />
+                                <FormField
+                                    control={form.control}
+                                    name="phone"
+                                    render={({field}) => (
+                                        <FormItem>
+                                            <FormLabel>Phone</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="123-456-7890"
+                                                    {...field}
+                                                    tabIndex={4}
+                                                    disabled={isSubmitting}
+                                                    className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
                         </div>
 
-                                <div className="grid grid-cols-1">
+                        <Separator />
+
+                        {/* Payment Information Section */}
+                        <div>
+                            <div className="flex items-center gap-2 mb-4">
+                                <CreditCard className="h-5 w-5 text-gray-500" />
+                                <h3 className="text-lg font-medium">Payment Information</h3>
+                            </div>
+
+                            <FormField
+                                control={form.control}
+                                name="paymentCard"
+                                render={({field}) => (
+                                    <FormItem className="mb-4">
+                                        <FormLabel>Card Number</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="0000 0000 0000 0000"
+                                                {...field}
+                                                tabIndex={5}
+                                                disabled={isSubmitting}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="col-span-1">
+                                    <div className="space-y-2">
+                                        <FormLabel>Expiration Date</FormLabel>
+                                        <div className="grid grid-cols-2 gap-2">
                                             <FormField
+                                                control={form.control}
+                                                name="cardMonth"
+                                                render={({field}) => (
+                                                    <FormItem>
+                                                        <FormControl>
+                                                            <Select
+                                                                onValueChange={field.onChange}
+                                                                value={field.value}
+                                                                disabled={isSubmitting}
+                                                            >
+                                                                <SelectTrigger tabIndex={6}>
+                                                                    <SelectValue
+                                                                        placeholder="Month" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
+                                                                        <SelectItem key={num}
+                                                                                    value={num.toString()}>
+                                                                            {num < 10 ? "0" : ""}
+                                                                            {num}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="cardYear"
+                                                render={({field}) => (
+                                                    <FormItem>
+                                                        <FormControl>
+                                                            <Select
+                                                                onValueChange={field.onChange}
+                                                                value={field.value}
+                                                                disabled={isSubmitting}
+                                                            >
+                                                                <SelectTrigger tabIndex={7}>
+                                                                    <SelectValue
+                                                                        placeholder="Year" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {[2025, 2026, 2027, 2028, 2029, 2030].map((num) => (
+                                                                        <SelectItem key={num}
+                                                                                    value={num.toString()}>
+                                                                            {num}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="col-span-1">
+                                    <FormField
                                         control={form.control}
                                         name="CVV"
                                         render={({field}) => (
                                             <FormItem>
                                                 <FormLabel>CVV</FormLabel>
                                                 <FormControl>
-                                                    <Input className='form-control form-control-sm w-16'
-                                                        placeholder=" 123"
+                                                    <Input
+                                                        placeholder="123"
                                                         maxLength={3}
-                                                        pattern="\d{3}"
                                                         {...field}
+                                                        tabIndex={8}
                                                         disabled={isSubmitting}
-                                                        // className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
                                                     />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
                                     />
-                                    <FormField
-                                        control={form.control}
-                                        name="BPC"
-                                        render={({field}) => (
-                                            <FormItem>
-                                                <FormLabel>Billing postal code</FormLabel>
-                                                <FormControl>
-                                                    <Input className='w-24'
-                                                        placeholder=" M5V 2T6"
-                                                        maxLength={6}
-                                                        // pattern="/^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d$/i"
-                                                        {...field}
-                                                        disabled={isSubmitting}
-                                                        // className={isAuthenticated ? "border-blue-200 bg-blue-50/30" : ""}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                            </CardContent>
-                        </Card>
-
-                        {/* Only show account creation for non-authenticated users */}
                         {!isAuthenticated && (
-                            <FormField
-                                control={form.control}
-                                name="createAccount"
-                                render={({field}) => (
-                                    <FormItem
-                                        className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                        <FormControl>
-                                            <Checkbox
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                                disabled={isSubmitting}
-                                            />
-                                        </FormControl>
-                                        <div className="space-y-1 leading-none">
-                                            <FormLabel>Create an account</FormLabel>
-                                            <FormDescription>
-                                                Create an account to easily manage your reservations
-                                                and
-                                                receive special offers
-                                            </FormDescription>
-                                        </div>
-                                    </FormItem>
-                                )}
-                            />
+                            <>
+                                <Separator />
+
+                                <FormField
+                                    control={form.control}
+                                    name="createAccount"
+                                    render={({field}) => (
+                                        <FormItem
+                                            className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                            <FormControl>
+                                                <Checkbox
+                                                    checked={field.value}
+                                                    onCheckedChange={field.onChange}
+                                                    tabIndex={9}
+                                                    disabled={isSubmitting}
+                                                />
+                                            </FormControl>
+                                            <div className="space-y-1 leading-none">
+                                                <FormLabel>Create an account</FormLabel>
+                                                <FormDescription>
+                                                    Create an account to easily manage your
+                                                    reservations and
+                                                    receive special offers
+                                                </FormDescription>
+                                            </div>
+                                        </FormItem>
+                                    )}
+                                />
+                            </>
                         )}
 
-                        {/* Only show password field for account creation and non-authenticated users */}
                         {!isAuthenticated && createAccount && (
                             <FormField
                                 control={form.control}
                                 name="password"
                                 render={({field}) => (
-                                    <FormItem>
+                                    <FormItem className="max-w-md">
                                         <FormLabel>Password</FormLabel>
                                         <FormControl>
                                             <Input
                                                 type="password"
                                                 placeholder="Choose a password"
                                                 {...field}
+                                                tabIndex={10}
                                                 disabled={isSubmitting}
                                             />
                                         </FormControl>
@@ -456,15 +437,16 @@ export default function GuestDetailsForm() {
                             </Alert>
                         )}
 
-                        <CardFooter className="px-0">
+                        <div className="pt-4">
                             <Button
                                 type="submit"
-                                className="w-full"
+                                className="w-full py-6 text-lg"
                                 disabled={isSubmitting}
+                                tabIndex={11}
                             >
                                 {isSubmitting ? 'Processing...' : 'Complete Reservation'}
                             </Button>
-                        </CardFooter>
+                        </div>
                     </form>
                 </Form>
             </CardContent>

@@ -20,7 +20,6 @@ const SocialIcon = ({ icon, href }: { icon: SimpleIcon, href: string }) => (
         </svg>
     </a>
 )
-import { Button } from "@/components/ui/button";
 
 export default function Footer() {
     return (
@@ -85,15 +84,6 @@ export default function Footer() {
                     <p className="text-stone-400 text-sm">
                         © {new Date().getFullYear()} King William Hotel. All rights reserved.
                     </p>
-                    <div className="flex items-center space-x-6 mt-4 md:mt-0">
-                        <Button variant="ghost" className="text-stone-400 hover:text-black">
-                            Guest Portal
-                        </Button>
-                        <span className="text-stone-600">|</span>
-                        <Button variant="ghost" className="text-stone-400 hover:text-black">
-                            Staff Access
-                        </Button>
-                    </div>
                 </div>
             </div>
         </footer>

@@ -1,5 +1,5 @@
 import db from './db';
-import { Room, RoomType, Reservation, UserReservation } from '@/types';
+import { Room, RoomType, Reservation, UserReservation, Service, ServiceCharge } from '@/types';
 
 // Helper function to get available rooms
 export async function getAvailableRooms(checkIn: string, checkOut: string): Promise<Room[]> {
@@ -118,13 +118,39 @@ export async function getAllReservations(): Promise<UserReservation[]> {
                r.is_claimed,
                g.first_name || ' ' || g.last_name as guest_name,
                rm.room_number,
-               rt.type_name as room_type
+               rt.type_name as room_type,
+               rc.request_status,
+               rc.change_type as change_type
         FROM reservation r
                  JOIN guest g ON r.guest_id = g.guest_id
                  JOIN room rm ON r.room_id = rm.room_id
                  JOIN room_type rt ON rm.room_type_id = rt.room_type_id
-        ORDER BY r.check_in_date DESC
+                 LEFT JOIN reservation_change rc ON r.reservation_id = rc.reservation_id
+        ORDER BY
+            CASE WHEN rc.request_status = 'Pending' THEN 0 ELSE 1 END,
+            r.check_in_date DESC
     `);
 
     return result;
+}
+
+export async function getAllServices(): Promise<Service[]> {
+    const result = await db.query(`
+        SELECT service_id, service_name, base_price
+        FROM service
+        ORDER BY service_name
+    `);
+
+    return result.rows as Service[];
+}
+
+
+export async function getServiceCharge(reservationId: number): Promise<number> {
+    const result = await db.queryRows<{ total: number }>(`
+        SELECT COALESCE(SUM(charged_amount), 0) AS total
+        FROM service_charge
+        WHERE reservation_id = $1
+    `, [reservationId]);
+
+    return parseFloat((result[0]?.total || "0.00").toString());
 }

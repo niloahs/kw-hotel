@@ -5,11 +5,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import AuthModal from '@/components/modals/AuthModal';
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { Separator } from "@/components/ui/separator";
 
 export default function Navigation() {
-    const {isAuthenticated, user, logout} = useAuth();
+    const {isAuthenticated, isStaff, user, logout} = useAuth();
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const router = useRouter();
@@ -49,10 +49,8 @@ export default function Navigation() {
     const handleLogout = async () => {
         try {
             await logout();
-            router.refresh();
         } catch (error) {
-            console.log(error);
-            console.error('Logout failed');
+            console.error('Logout failed: ', error);
         }
     };
 
@@ -84,23 +82,38 @@ export default function Navigation() {
                         ))}
 
                         {/* Book Now button */}
-                        <Button
-                            variant={isScrolled ? "default" : "outline"}
-                            className={isScrolled ? '' : 'text-black border-white'}
-                            onClick={() => router.push('/reservations')}
-                        >
-                            Book Now
-                        </Button>
+
+
+                        {!isStaff && (
+                            <Button
+                                variant={isScrolled ? "default" : "outline"}
+                                className={isScrolled ? '' : 'text-black border-white'}
+                                onClick={() => router.push('/reservations')}
+                            >
+                                Book Now
+                            </Button>
+                        )}
 
                         <Separator orientation="vertical" className="h-6" />
 
                         {/* Show My Account link when authenticated */}
-                        {isAuthenticated && (
-                            <Link href="/account"
-                                  className={isScrolled ? 'text-gray-600' : 'text-white'}>
-                                My Account
-                            </Link>
+                        {(isAuthenticated && !isStaff) && (
+                            <>
+                                <Link href="/account"
+                                      className={isScrolled ? 'text-gray-600' : 'text-white'}>
+                                    My Account
+                                </Link>
+                            </>
                         )}
+                        <>
+
+                            {isStaff && (
+                                <Link href="/allreservations"
+                                      className={isScrolled ? 'text-gray-600' : 'text-white'}>
+                                    All Reservations
+                                </Link>
+                            )}
+                        </>
 
                         {/* Show Login or Logout based on auth state */}
                         {isAuthenticated ? (

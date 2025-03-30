@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
-import auth from "@/lib/auth";
+import { auth } from "@/lib/auth";
 
 export async function POST(request: Request) {
     try {
         const {reservationId, requestType, checkInDate, checkOutDate} = await request.json();
 
         // Get current user
-        const user = await auth.getCurrentUser();
-        if (!user) {
+        const session = await auth();
+        if (!session) {
             return NextResponse.json({message: 'Authentication required'}, {status: 401});
         }
 
@@ -18,11 +18,27 @@ export async function POST(request: Request) {
              FROM reservation
              WHERE reservation_id = $1
                AND guest_id = $2`,
-            [reservationId, user.id]
+            [reservationId, session.user.id]
         );
 
         if (reservationCheck.rowCount === 0) {
             return NextResponse.json({message: 'Reservation not found'}, {status: 404});
+        }
+
+        // Check if there's already a pending request for this reservation
+        const pendingCheck = await db.query(
+            `SELECT *
+             FROM reservation_change
+             WHERE reservation_id = $1
+               AND request_status = 'Pending'`,
+            [reservationId]
+        );
+
+        if (pendingCheck.rowCount! > 0) {
+            return NextResponse.json(
+                {message: 'This reservation already has a pending change request'},
+                {status: 409} // Conflict
+            );
         }
 
         const reservation = reservationCheck.rows[0];

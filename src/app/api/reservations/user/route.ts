@@ -1,23 +1,26 @@
 import { NextResponse } from "next/server";
 import { getUserReservations } from "@/lib/db-helpers";
-import auth from "@/lib/auth";
-import { handleApiError } from "@/lib/api-utils";
+import { auth } from "@/lib/auth";
 
 export async function GET() {
     try {
-        const user = await auth.getCurrentUser();
+        const session = await auth();
 
-        if (!user) {
+        if (!session) {
             return NextResponse.json(
                 {message: 'Authentication required'},
                 {status: 401}
             );
         }
 
-        const reservations = await getUserReservations(user.id);
+        const reservations = await getUserReservations(session.user.id);
 
         return NextResponse.json(reservations);
     } catch (error) {
-        return handleApiError(error);
+        console.error('Error fetching reservations:', error);
+        return NextResponse.json(
+            {message: 'An error occurred while fetching reservations'},
+            {status: 500}
+        );
     }
 }

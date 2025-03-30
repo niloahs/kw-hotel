@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { calculateNights, formatPhoneNumber } from "@/lib/utils";
-import { hash } from "bcryptjs";
-import auth, { generateToken, UserType } from "@/lib/auth";
+import { hash } from "bcrypt";
+import { auth } from "@/lib/auth";
 import { randomUUID } from 'crypto';
 
 export async function POST(request: Request) {
@@ -24,37 +24,36 @@ export async function POST(request: Request) {
         return await db.transaction(async (client) => {
             // First, check if the room is still available
             const roomAvailabilityCheck = await client.query(`
-                SELECT room_id FROM room
-                WHERE room_id = $1 
-                AND status = 'Available'
-                AND room_id NOT IN (
-                    SELECT room_id FROM reservation
-                    WHERE status = 'Confirmed'
-                    AND (
-                        (check_in_date <= $2 AND check_out_date > $2)
-                        OR (check_in_date < $3 AND check_out_date >= $3)
-                        OR (check_in_date >= $2 AND check_out_date <= $3)
-                    )
-                )
+                SELECT room_id
+                FROM room
+                WHERE room_id = $1
+                  AND status = 'Available'
+                  AND room_id NOT IN (SELECT room_id
+                                      FROM reservation
+                                      WHERE status = 'Confirmed'
+                                        AND (
+                                          (check_in_date <= $2 AND check_out_date > $2)
+                                              OR (check_in_date < $3 AND check_out_date >= $3)
+                                              OR (check_in_date >= $2 AND check_out_date <= $3)
+                                          ))
             `, [roomId, checkInDate, checkOutDate]);
 
             if (roomAvailabilityCheck.rowCount === 0) {
                 return NextResponse.json(
-                    { message: 'Sorry, this room is no longer available for the selected dates' },
-                    { status: 409 } // Conflict
+                    {message: 'Sorry, this room is no longer available for the selected dates'},
+                    {status: 409} // Conflict
                 );
             }
 
             // Create or retrieve guest record
             let guestId;
-            let token = null;
             let userData = null;
 
             // Handle authenticated users
             if (userAuthenticated) {
                 // Get the current authenticated user from auth middleware
-                const currentUser = await auth.getCurrentUser();
-                if (!currentUser) {
+                const session = await auth();
+                if (!session) {
                     return NextResponse.json(
                         {message: 'Authentication required'},
                         {status: 401}
@@ -62,7 +61,7 @@ export async function POST(request: Request) {
                 }
 
                 // Use the authenticated user's ID directly
-                guestId = currentUser.id;
+                guestId = session.user.id;
             } else {
                 // For non-authenticated users, follow the existing flow
                 // Check if guest exists
@@ -83,16 +82,15 @@ export async function POST(request: Request) {
                             [passwordHash, guestId]
                         );
 
-                        // Generate token for auto-login
+                        // Create user data for response - NextAuth will handle session creation separately
                         userData = {
                             id: guestId,
                             firstName,
                             lastName,
                             email,
                             phone,
-                            type: 'guest' as UserType
+                            userType: 'guest'
                         };
-                        token = generateToken(userData);
                     }
                 } else {
                     // Create new guest
@@ -109,16 +107,15 @@ export async function POST(request: Request) {
 
                         guestId = newGuest.rows[0].guest_id;
 
-                        // Generate token for auto-login
+                        // Create user data for response
                         userData = {
                             id: guestId,
                             firstName,
                             lastName,
                             email,
                             phone,
-                            type: 'guest' as UserType
+                            userType: 'guest'
                         };
-                        token = generateToken(userData);
                     } else {
                         // Create guest without account
                         const newGuest = await client.query(
@@ -191,7 +188,6 @@ export async function POST(request: Request) {
                 // Only include confirmation code if not claimed
                 confirmationCode: userAuthenticated || createAccount ? null : confirmationCode,
                 totalAmount,
-                token,
                 user: userData
             });
         });

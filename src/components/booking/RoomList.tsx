@@ -26,6 +26,11 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle, } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 
+function getRandomNumber(): number {
+    return Math.floor(Math.random() * 5);
+}
+
+const roomImages: string[] = ["-room1.jpg", "-room2.jpg", "-room3.jpg", "-room4.jpg", "-room5.jpg",]
 export default function RoomList() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -174,16 +179,43 @@ interface RoomCardProps {
 }
 
 function RoomCard({room, onSelect}: RoomCardProps) {
+
+    // Determine if this is a special rate period
+    const hasSeasonalRate = room.adjustedRate && room.adjustedRate !== room.baseRate;
+
+    // Determine which season we're in (for display purposes)
+    const getSeasonName = () => {
+        const now = new Date();
+        const month = now.getMonth();
+
+        // June-September
+        if (month >= 5 && month <= 8) return "Summer";
+
+        // December-January
+        if (month >= 11 || month === 0) return "Holiday";
+
+        return "Special";
+    };
+
     return (
         <Card className="overflow-hidden hover:shadow-lg transition-shadow">
             <div className="relative h-48">
                 <Image
-                    src={`/images/rooms/${room.typeName?.toLowerCase().replace(' ', '-') || 'default'}.jpg`}
+                    src={`/${room.typeName?.toLocaleLowerCase()}/${room.typeName?.toLocaleLowerCase()}${roomImages[getRandomNumber()]}`}
                     alt={room.typeName || 'Hotel Room'}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
+
+                {/* Special rate badge */}
+                {hasSeasonalRate && (
+                    <div className="absolute top-3 right-3">
+                        <Badge className="bg-primary text-white px-2 py-1">
+                            {getSeasonName()} Rate
+                        </Badge>
+                    </div>
+                )}
             </div>
 
             <CardHeader>
@@ -196,19 +228,20 @@ function RoomCard({room, onSelect}: RoomCardProps) {
             <CardContent>
                 <div className="flex justify-between items-center">
                     <div>
+                        {/* Price display */}
                         <p className="text-lg font-semibold">
                             {formatCurrency(room.adjustedRate || room.baseRate || 0)}
                             <span className="text-sm font-normal"> / night</span>
                         </p>
 
-                        {room.adjustedRate && room.adjustedRate !== room.baseRate && (
-                            <div className="flex items-center space-x-2">
-                                <span className="text-sm line-through text-gray-500">
-                                    {formatCurrency(room.baseRate || 0)}
-                                </span>
-                                <Badge variant="secondary" className="bg-green-100 text-green-800">
-                                    Special Rate
-                                </Badge>
+                        {/* Rate type label */}
+                        {hasSeasonalRate && (
+                            <div className="flex items-center mt-1">
+                                <div
+                                    className="text-xs text-primary"
+                                >
+                                    {getSeasonName()} pricing applies to your dates
+                                </div>
                             </div>
                         )}
                     </div>

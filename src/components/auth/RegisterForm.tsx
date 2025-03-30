@@ -17,8 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { RegisterFormData, registerSchema } from "@/lib/validation-schemas";
-import { useAuth } from "@/context/AuthContext";
-import { formatPhoneNumber } from '@/lib/utils';
+import { useAuth } from "@/hooks/useAuth";
 
 interface RegisterFormProps {
     onSuccess?: () => void;
@@ -26,8 +25,8 @@ interface RegisterFormProps {
     reservationId?: number;
 }
 
-export default function RegisterForm({onSuccess, onLoginClick, reservationId}: RegisterFormProps) {
-    const { setUserAndToken } = useAuth();
+export default function RegisterForm({onSuccess, reservationId}: RegisterFormProps) {
+    const {login} = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -48,8 +47,8 @@ export default function RegisterForm({onSuccess, onLoginClick, reservationId}: R
         setError('');
 
         try {
-            console.log("Registration with reservationId:", reservationId);
-            const response = await axios.post('/api/auth/register', {
+            // Register the user
+            await axios.post('/api/auth/register', {
                 firstName: data.firstName,
                 lastName: data.lastName,
                 email: data.email,
@@ -58,12 +57,13 @@ export default function RegisterForm({onSuccess, onLoginClick, reservationId}: R
                 reservationId: reservationId
             });
 
-            // Auto-sign in by using the returned token and user data
-            if (response.data.token && response.data.user) {
-                setUserAndToken(response.data.user, response.data.token);
+            // Login after registration
+            const result = await login(data.email, data.password);
+
+            if (result?.error) {
+                throw new Error(result.error);
             }
 
-            // Call success callback
             onSuccess?.();
         } catch (err) {
             if (axios.isAxiosError(err)) {
@@ -91,6 +91,7 @@ export default function RegisterForm({onSuccess, onLoginClick, reservationId}: R
                                         placeholder="John"
                                         {...field}
                                         disabled={isLoading}
+                                        tabIndex={1}
                                     />
                                 </FormControl>
                                 <FormMessage />
@@ -109,6 +110,7 @@ export default function RegisterForm({onSuccess, onLoginClick, reservationId}: R
                                         placeholder="Doe"
                                         {...field}
                                         disabled={isLoading}
+                                        tabIndex={2}
                                     />
                                 </FormControl>
                                 <FormMessage />
@@ -128,6 +130,7 @@ export default function RegisterForm({onSuccess, onLoginClick, reservationId}: R
                                     placeholder="your@email.com"
                                     {...field}
                                     disabled={isLoading}
+                                    tabIndex={3}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -146,6 +149,7 @@ export default function RegisterForm({onSuccess, onLoginClick, reservationId}: R
                                     placeholder="123-456-7890"
                                     {...field}
                                     disabled={isLoading}
+                                    tabIndex={4}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -164,6 +168,7 @@ export default function RegisterForm({onSuccess, onLoginClick, reservationId}: R
                                     placeholder="********"
                                     {...field}
                                     disabled={isLoading}
+                                    tabIndex={5}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -183,6 +188,7 @@ export default function RegisterForm({onSuccess, onLoginClick, reservationId}: R
                                     placeholder="********"
                                     {...field}
                                     disabled={isLoading}
+                                    tabIndex={6}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -200,6 +206,7 @@ export default function RegisterForm({onSuccess, onLoginClick, reservationId}: R
                     type="submit"
                     className="w-full"
                     disabled={isLoading}
+                    tabIndex={7}
                 >
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isLoading ? 'Creating Account...' : 'Create Account'}

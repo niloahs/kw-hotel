@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
-import auth from "@/lib/auth";
+import { auth } from "@/lib/auth";
 
 // Check if a room type is a favorite
 export async function GET(request: Request) {
@@ -12,8 +12,8 @@ export async function GET(request: Request) {
             return NextResponse.json({message: 'Room type ID required'}, {status: 400});
         }
 
-        const user = await auth.getCurrentUser();
-        if (!user) {
+        const session = await auth();
+        if (!session) {
             return NextResponse.json({message: 'Authentication required'}, {status: 401});
         }
 
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
              FROM guest_preference
              WHERE guest_id = $1
                AND room_type_id = $2`,
-            [user.id, roomTypeId]
+            [session.user.id, roomTypeId]
         );
 
         return NextResponse.json({isFavorite: result.rowCount! > 0});
@@ -39,9 +39,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const {roomTypeId} = await request.json();
-        const user = await auth.getCurrentUser();
+        const session = await auth();
 
-        if (!user) {
+        if (!session) {
             return NextResponse.json({message: 'Authentication required'}, {status: 401});
         }
 
@@ -51,14 +51,14 @@ export async function POST(request: Request) {
              FROM guest_preference
              WHERE guest_id = $1
                AND room_type_id = $2`,
-            [user.id, roomTypeId]
+            [session.user.id, roomTypeId]
         );
 
         if (existingPref.rowCount === 0) {
             await db.query(
                 `INSERT INTO guest_preference (guest_id, room_type_id)
                  VALUES ($1, $2)`,
-                [user.id, roomTypeId]
+                [session.user.id, roomTypeId]
             );
         }
 
@@ -77,9 +77,9 @@ export async function DELETE(request: Request) {
     try {
         const {searchParams} = new URL(request.url);
         const roomTypeId = searchParams.get('roomTypeId');
-        const user = await auth.getCurrentUser();
+        const session = await auth();
 
-        if (!user) {
+        if (!session) {
             return NextResponse.json({message: 'Authentication required'}, {status: 401});
         }
 
@@ -90,7 +90,7 @@ export async function DELETE(request: Request) {
              WHERE guest_id = $1
                AND room_type_id = $2
              RETURNING guest_preference_id`,
-            [user.id, roomTypeId]
+            [session.user.id, roomTypeId]
         );
 
         // Check if anything was deleted

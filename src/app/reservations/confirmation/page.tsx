@@ -10,7 +10,7 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { Reservation } from "@/types";
 import AuthModal from '@/components/modals/AuthModal';
 import { ClipboardCopy } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ConfirmationPage() {
     const {isAuthenticated} = useAuth();
@@ -18,29 +18,27 @@ export default function ConfirmationPage() {
     const searchParams = useSearchParams();
     const reservationId = searchParams.get('id');
     const [reservation, setReservation] = useState<Reservation | null>(null);
+    const [totalServiceCharge, setTotalServiceCharge] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [codeCopied, setCodeCopied] = useState(false);
 
+    // Show auth modal if not authenticated and we have a reservation that isn't claimed
     useEffect(() => {
-        // Check if auth is loaded on page entry
-        const checkAuthStatus = async () => {
-            // If we have a token in cookie but not loaded in context, try to load it
-            const token = document.cookie.includes('kw_auth_token');
-            if (token && !isAuthenticated) {
-                try {
-                    console.log("Auth token exists");
-                } catch (error) {
-                    console.error("Error checking auth status", error);
-                }
-            }
-        };
+        if (reservation && !isAuthenticated && reservation.confirmationCode && !reservation.isClaimed) {
+            // Optional: Show auth modal after a delay to give user time to read the confirmation
+            const timer = setTimeout(() => {
+                setIsAuthModalOpen(true);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [reservation, isAuthenticated]);
 
-        checkAuthStatus();
-
+    useEffect(() => {
         if (reservationId) {
             fetchReservation();
+            fetchServiceCharge();
         } else {
             setError('No reservation ID provided');
             setLoading(false);
@@ -60,7 +58,16 @@ export default function ConfirmationPage() {
                 setLoading(false);
             }
         }
-    }, [reservationId, isAuthenticated]);
+
+        async function fetchServiceCharge() {
+            try {
+                const response = await axios.get(`/api/charge-amount/${reservationId}`);
+                setTotalServiceCharge(parseFloat(response.data.totalCharge));
+            } catch (error) {
+                console.error("Failed to fetch service charge:", error);
+            }
+        }
+    }, [reservationId]);
 
     const copyToClipboard = () => {
         if (!reservation?.confirmationCode) return;
@@ -77,6 +84,10 @@ export default function ConfirmationPage() {
 
     const navigateToHomepage = () => {
         router.push('/');
+    };
+
+    const navigateToAccount = () => {
+        router.push('/account?tab=reservations');
     };
 
     if (loading) {
@@ -109,6 +120,8 @@ export default function ConfirmationPage() {
         );
     }
 
+    const totalAmountWithCharge = Number(reservation.totalAmount) + (totalServiceCharge ?? 0);
+
     return (
         <>
             <Navigation />
@@ -139,12 +152,25 @@ export default function ConfirmationPage() {
                             <div>
                                 <p className="text-gray-500">Room</p>
                                 <p className="font-semibold">{reservation.roomType} -
-                                                                                    Room {reservation.roomNumber}</p>
+                                    Room {reservation.roomNumber}</p>
+                            </div>
+
+                            <div className="border-t border-b py-4 my-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-gray-500">Room Cost</p>
+                                        <p className="font-semibold">{formatCurrency(reservation.totalAmount)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-500">Service Charges</p>
+                                        <p className="font-semibold">{formatCurrency(Number(totalServiceCharge ?? 0))}</p>
+                                    </div>
+                                </div>
                             </div>
 
                             <div>
                                 <p className="text-gray-500">Total Amount</p>
-                                <p className="font-semibold">{formatCurrency(reservation.totalAmount)}</p>
+                                <p className="font-semibold">{formatCurrency(totalAmountWithCharge)}</p>
                             </div>
 
                             {/* Reservation Code Section */}
@@ -174,6 +200,17 @@ export default function ConfirmationPage() {
                                                                                                   copied!</p>
                                             )}
                                         </div>
+                                        {!isAuthenticated && (
+                                            <div className="mt-4 text-blue-700">
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    onClick={() => setIsAuthModalOpen(true)}
+                                                >
+                                                    Create an account to manage this reservation
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
@@ -184,6 +221,15 @@ export default function ConfirmationPage() {
                                         <p>Your reservation has been linked to your account. You can
                                            view and manage your reservations from your account page.
                                         </p>
+                                        {isAuthenticated && (
+                                            <Button
+                                                variant="outline"
+                                                className="w-full mt-4"
+                                                onClick={navigateToAccount}
+                                            >
+                                                Go to My Reservations
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             )}

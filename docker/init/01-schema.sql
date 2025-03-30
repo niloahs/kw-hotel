@@ -104,20 +104,19 @@ CREATE TABLE reservation
     CHECK (check_out_date > check_in_date)
 );
 
--- Create reservation_change table with explicit date fields
+-- Create reservation_change table
 CREATE TABLE reservation_change
 (
     reservation_change_id SERIAL PRIMARY KEY,
-    reservation_id        INTEGER     NOT NULL REFERENCES reservation (reservation_id) ON DELETE CASCADE,
-    staff_id              INTEGER REFERENCES staff (staff_id) ON DELETE RESTRICT,
-    change_type           VARCHAR(15) NOT NULL CHECK (change_type IN ('DateChange', 'Cancellation')),
+    reservation_id        INTEGER REFERENCES reservation (reservation_id) ON DELETE CASCADE,
+    staff_id              INTEGER REFERENCES staff (staff_id),
+    change_type           VARCHAR(50) NOT NULL CHECK (change_type IN ('DateChange', 'Cancellation')),
     old_check_in_date     DATE,
     old_check_out_date    DATE,
     new_check_in_date     DATE,
     new_check_out_date    DATE,
-    change_date           TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    request_status        VARCHAR(10) NOT NULL DEFAULT 'Pending'
-        CHECK (request_status IN ('Pending', 'Approved', 'Rejected'))
+    request_status        VARCHAR(20) NOT NULL DEFAULT 'Pending',
+    change_date           TIMESTAMP            DEFAULT NOW()
 );
 
 -- Create service_charge table
@@ -137,3 +136,4 @@ CREATE INDEX idx_reservation_dates ON reservation (check_in_date, check_out_date
 CREATE INDEX idx_reservation_status ON reservation (status);
 CREATE INDEX idx_guest_email ON guest (email);
 CREATE INDEX idx_seasonal_rate_dates ON seasonal_rate (start_date, end_date);
+CREATE INDEX idx_reservation_change_reservation_id ON reservation_change (reservation_id);

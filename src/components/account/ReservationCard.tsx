@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Reservation } from '@/types';
 import { useRouter } from 'next/navigation';
-import { Star } from 'lucide-react';
+import { AlertCircle, Star } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ReservationCardProps {
     reservation: Reservation;
@@ -24,6 +25,7 @@ export default function ReservationCard({
     const router = useRouter();
     const [isFavorite, setIsFavorite] = useState(false);
     const [roomTypeId, setRoomTypeId] = useState<number | null>(null);
+    const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
     // Get room type ID from roomId if we need favorites functionality
     useEffect(() => {
@@ -59,6 +61,22 @@ export default function ReservationCard({
             checkFavoriteStatus();
         }
     }, [roomTypeId, showFavoriteButton]);
+
+    // Check if this reservation has a pending request
+    useEffect(() => {
+        if (showModifyButton && reservation.reservationId) {
+            const checkPendingRequest = async () => {
+                try {
+                    const response = await axios.get(`/api/reservations/has-pending-request/${reservation.reservationId}`);
+                    setHasPendingRequest(response.data.hasPendingRequest);
+                } catch (err) {
+                    console.error('Failed to check pending request status', err);
+                }
+            };
+
+            checkPendingRequest();
+        }
+    }, [reservation.reservationId, showModifyButton]);
 
     // Toggle favorite status
     const toggleFavorite = async (e: React.MouseEvent) => {
@@ -153,13 +171,29 @@ export default function ReservationCard({
 
                 {showModifyButton && (
                     <div className="mt-4 pt-4 border-t">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => router.push(`/reservations/modify/${reservation.reservationId}`)}
-                        >
-                            Request Changes
-                        </Button>
+                        {hasPendingRequest ? (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex items-center text-amber-600 text-sm">
+                                            <AlertCircle className="w-4 h-4 mr-1" />
+                                            Request pending approval
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>This reservation has a pending change request</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        ) : (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => router.push(`/reservations/modify/${reservation.reservationId}`)}
+                            >
+                                Request Changes
+                            </Button>
+                        )}
                     </div>
                 )}
             </CardContent>
