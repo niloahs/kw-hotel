@@ -158,8 +158,8 @@ export default function ConfirmationPage() {
                             <div className="border-t border-b py-4 my-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <p className="text-gray-500">Room Cost</p>
-                                        <p className="font-semibold">{formatCurrency(reservation.totalAmount)}</p>
+                                        <p className="text-gray-500">Room Price</p>
+                                        <p className="font-semibold">{formatCurrency(reservation.totalAmount - (totalServiceCharge ?? 0))}</p>
                                     </div>
                                     <div>
                                         <p className="text-gray-500">Service Charges</p>
@@ -170,7 +170,7 @@ export default function ConfirmationPage() {
 
                             <div>
                                 <p className="text-gray-500">Total Amount</p>
-                                <p className="font-semibold">{formatCurrency(totalAmountWithCharge)}</p>
+                                <p className="font-semibold">{formatCurrency(totalAmountWithCharge - (totalServiceCharge ?? 0))}</p>
                             </div>
 
                             {/* Reservation Code Section */}

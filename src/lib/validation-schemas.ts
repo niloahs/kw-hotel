@@ -64,7 +64,7 @@ export const guestDetailsSchema = z.object({
             { message: 'Please enter a valid phone number'}
         ),
     createAccount: z.boolean().default(false),
-    password: z.string().min(6, 'Password must be at least 6 characters').optional(),
+    password: z.string().optional(),
     // CardName: z.string().min(1, 'Name on card is required'),
     paymentCard: z.string()
         .min(1, 'Card number is required')
@@ -82,19 +82,19 @@ export const guestDetailsSchema = z.object({
         // .min(6, 'Postal code must be 6 characters')
         // .max(6, 'Postal code must be 6 characters')
         // .regex(/^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d$/i, 'Please enter a valid Canadian postal code')
-}).refine(
-    (data) => {
-        // If createAccount is true, password is required
-        if (data.createAccount) {
-            return data.password && data.password.length >= 6;
-        }
-        return true;
-    },
-    {
-        message: "Password is required when creating an account",
-        path: ["password"]
-    }
-);
+})//.refine(
+//     (data) => {
+//         // If createAccount is true, password is required
+//         if (data.createAccount) {
+//             return data.password && data.password.length >= 6;
+//         }
+//         return true;
+//     },
+//     {
+//         message: "Password is required when creating an account",
+//         path: ["password"]
+//     }
+// );
 
 export type GuestDetailsFormData = z.infer<typeof guestDetailsSchema>;
 

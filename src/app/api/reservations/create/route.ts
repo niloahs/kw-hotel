@@ -182,6 +182,7 @@ export async function POST(request: Request) {
                 WHERE room_id = $1
             `, [roomId]);
 
+            console.log('Reservation created successfully ###2###');
             return NextResponse.json({
                 success: true,
                 reservationId,
