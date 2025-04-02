@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { formatPhoneNumber } from "@/lib/utils";
+import { validateLuhn } from './payment-utils';
 
 // Login form schema
 export const loginSchema = z.object({
@@ -24,7 +25,7 @@ export const registerSchema = z.object({
             {message: 'Please enter a valid 10-digit phone number'}
         ),
     password: z.string().min(6, 'Password must be at least 6 characters'),
-    confirmPassword: z.string().min(6, 'Please confirm your password')
+    confirmPassword: z.string().min(6, 'Please confirm your password').optional()
 }).refine(data => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ['confirmPassword']
@@ -58,20 +59,42 @@ export const guestDetailsSchema = z.object({
         .refine(
             (value) => {
                 // Check if it matches our expected format after transformation
-                return /^\d{3}-\d{3}-\d{4}$/.test(value) || value.length === 10;
+                return /^\d{3}-\d{3}-\d{4}$/.test(value);
             },
-            {message: 'Please enter a valid 10-digit phone number'}
+            { message: 'Please enter a valid phone number'}
         ),
     createAccount: z.boolean().default(false),
     password: z.string().optional(),
-    paymentCard: z.string().min(13, 'Please enter a valid payment card number'),
-    CVV: z.string().min(3, 'CVV must be 3 digits').max(3, 'CVV must be 3 digits'),
-    cardMonth: z.string().min(1, 'Month is required'),
-    cardYear: z.string().min(1, 'Year is required')
-}).refine(data => !data.createAccount || (data.password && data.password.length >= 6), {
-    message: 'Password must be at least 6 characters when creating an account',
-    path: ['password']
-});
+    // CardName: z.string().min(1, 'Name on card is required'),
+    paymentCard: z.string()
+        .min(1, 'Card number is required')
+        .refine(
+            (value) => validateLuhn(value),
+            { message: 'Please enter a valid credit card number' }
+        ),
+    cardMonth: z.string().min(1, 'Expiration month is required'),
+    cardYear: z.string().min(1, 'Expiration year is required'),
+    CVV: z.string()
+        .min(3, 'CVV must be 3 digits')
+        .max(3, 'CVV must be 3 digits')
+        .regex(/^\d{3}$/, 'CVV must contain only numbers'),
+    // BPC: z.string()
+        // .min(6, 'Postal code must be 6 characters')
+        // .max(6, 'Postal code must be 6 characters')
+        // .regex(/^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d$/i, 'Please enter a valid Canadian postal code')
+})//.refine(
+//     (data) => {
+//         // If createAccount is true, password is required
+//         if (data.createAccount) {
+//             return data.password && data.password.length >= 6;
+//         }
+//         return true;
+//     },
+//     {
+//         message: "Password is required when creating an account",
+//         path: ["password"]
+//     }
+// );
 
 export type GuestDetailsFormData = z.infer<typeof guestDetailsSchema>;
 
