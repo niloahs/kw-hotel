@@ -27,15 +27,10 @@ export async function POST(request: Request) {
                 SELECT room_id
                 FROM room
                 WHERE room_id = $1
-                  AND status = 'Available'
                   AND room_id NOT IN (SELECT room_id
                                       FROM reservation
                                       WHERE status IN ('Upcoming', 'Active')
-                                        AND (
-                                          (check_in_date <= $2 AND check_out_date > $2)
-                                              OR (check_in_date < $3 AND check_out_date >= $3)
-                                              OR (check_in_date >= $2 AND check_out_date <= $3)
-                                          ))
+                                        AND NOT (check_out_date <= $2 OR check_in_date >= $3))
             `, [roomId, checkInDate, checkOutDate]);
 
             if (roomAvailabilityCheck.rowCount === 0) {

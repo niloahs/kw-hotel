@@ -14,21 +14,14 @@ export async function getAvailableRooms(checkIn: string, checkOut: string): Prom
                COALESCE(sr.rate_multiplier, 1)                           as rate_multiplier,
                COALESCE(rt.base_rate * sr.rate_multiplier, rt.base_rate) as adjusted_rate
         FROM room r
-                 JOIN
-             room_type rt ON r.room_type_id = rt.room_type_id
-                 LEFT JOIN
-             seasonal_rate sr ON
-                 rt.room_type_id = sr.room_type_id AND
-                 $1 BETWEEN sr.start_date AND sr.end_date
-        WHERE r.status = 'Available'
-          AND r.room_id NOT IN (SELECT res.room_id
+                 JOIN room_type rt ON r.room_type_id = rt.room_type_id
+                 LEFT JOIN seasonal_rate sr ON
+            rt.room_type_id = sr.room_type_id AND
+            $1 BETWEEN sr.start_date AND sr.end_date
+        WHERE r.room_id NOT IN (SELECT res.room_id
                                 FROM reservation res
                                 WHERE res.status IN ('Upcoming', 'Active')
-                                  AND (
-                                    (res.check_in_date <= $1 AND res.check_out_date > $1)
-                                        OR (res.check_in_date < $2 AND res.check_out_date >= $2)
-                                        OR (res.check_in_date >= $1 AND res.check_out_date <= $2)
-                                    ))
+                                  AND NOT (res.check_out_date <= $1 OR res.check_in_date >= $2))
         ORDER BY rt.base_rate, r.room_number
     `, [checkIn, checkOut]);
 
@@ -137,34 +130,48 @@ export async function getAllReservations(): Promise<UserReservation[]> {
 
 export async function updateReservationStatuses(): Promise<void> {
     try {
-        // Update to Active when check-in date has arrived
-        await db.query(`
-            UPDATE reservation
-            SET status = 'Active'
-            WHERE check_in_date <= CURRENT_DATE
-              AND check_out_date > CURRENT_DATE
-              AND status = 'Upcoming'
-        `);
+        // Get the current date
+        const today = new Date().toLocaleString('en-CA', {
+            timeZone: 'America/Toronto',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).split('/').join('-');
 
-        // Update to Completed when check-out date has passed
-        await db.query(`
-            UPDATE reservation
-            SET status = 'Completed'
-            WHERE check_out_date <= CURRENT_DATE
-              AND status = 'Active'
-        `);
+        console.log(`Updating statuses using date: ${today}`);
 
-        // Mark rooms as Available for completed reservations
+        await db.query(`
+      UPDATE reservation
+      SET status = 
+        CASE 
+          WHEN status = 'Cancelled' THEN 'Cancelled'
+          WHEN $1::date > check_out_date THEN 'Completed'
+          WHEN $1::date >= check_in_date AND $1::date <= check_out_date THEN 'Active'
+          ELSE 'Upcoming'
+        END
+      WHERE status IN ('Upcoming', 'Active', 'Completed')
+    `, [today]);
+
+        // Room status updates (with the explicit date parameter)
         await db.query(`
             UPDATE room r
             SET status = 'Available'
             FROM reservation res
             WHERE r.room_id = res.room_id
               AND res.status = 'Completed'
-              AND r.status = 'Occupied'
+              AND r.status = 'Occupied';
+
+            -- Set rooms from active reservations to Occupied
+            UPDATE room r
+            SET status = 'Occupied'
+            FROM reservation res
+            WHERE r.room_id = res.room_id
+              AND res.status = 'Active'
+              AND r.status <> 'Occupied';
         `);
     } catch (error) {
-        console.error(error);
+        console.error('Error updating reservation statuses:', error);
+        throw error;
     }
 }
 

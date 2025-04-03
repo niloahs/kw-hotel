@@ -108,10 +108,14 @@ export default function Navigation() {
                         <>
 
                             {isStaff && (
-                                <Link href="/allreservations"
-                                      className={isScrolled ? 'text-gray-600' : 'text-white'}>
-                                    All Reservations
-                                </Link>
+                                <>
+                                    <Link href="/allreservations" className={isScrolled ? 'text-gray-600' : 'text-white'}>
+                                        All Reservations
+                                    </Link>
+                                    <Link href="/dashboard" className={isScrolled ? 'text-gray-600' : 'text-white'}>
+                                        Dashboard
+                                    </Link>
+                                </>
                             )}
                         </>
 

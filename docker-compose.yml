@@ -8,6 +8,12 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: kingwilliam
+      TZ: America/Toronto
     volumes:
       - ./docker/init:/docker-entrypoint-initdb.d
+      - pg_data:/var/lib/postgresql/data
+    command: postgres -c "timezone=America/Toronto"
     restart: unless-stopped
+
+volumes:
+  pg_data:

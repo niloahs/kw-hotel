@@ -3,7 +3,8 @@ import { getServiceCharge } from "@/lib/db-helpers";
 import { createApiError, handleApiError } from "@/lib/api-utils";
 
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+    const params = await props.params;
     try {
         const id = parseInt(params.id);
         if (isNaN(id)) {

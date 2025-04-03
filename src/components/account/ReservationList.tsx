@@ -39,21 +39,11 @@ export default function ReservationList() {
         fetchReservations();
     }, []);
 
-    // Group reservations by status and date
-    const today = new Date().toISOString().split('T')[0];
-
-    const active = reservations.filter(r =>
-        (r.status === 'Active' || r.status === 'Upcoming') &&
-        new Date(r.checkOutDate) >= new Date(today)
-    );
-
-    const past = reservations.filter(r =>
-        r.status === 'Completed'
-    );
-
-    const cancelled = reservations.filter(r =>
-        r.status === 'Cancelled'
-    );
+    // Group reservations by status
+    const active = reservations.filter(r => r.status === 'Active');
+    const upcoming = reservations.filter(r => r.status === 'Upcoming');
+    const past = reservations.filter(r => r.status === 'Completed');
+    const cancelled = reservations.filter(r => r.status === 'Cancelled');
 
     if (loading) {
         return <div className="space-y-4">
@@ -75,7 +65,7 @@ export default function ReservationList() {
             {/* Active Reservations */}
             {active.length > 0 && (
                 <>
-                    <h3 className="font-medium text-lg border-b pb-2">Active & Upcoming Stays</h3>
+                    <h3 className="font-medium text-lg border-b pb-2">Active Stays</h3>
                     <div className="space-y-4">
                         {active.map(reservation => (
                             <ReservationCard
@@ -83,6 +73,23 @@ export default function ReservationList() {
                                 reservation={reservation}
                                 showModifyButton={true}
                                 showBillButton={true}
+                            />
+                        ))}
+                    </div>
+                </>
+            )}
+
+            {/* Upcoming Reservations */}
+            {upcoming.length > 0 && (
+                <>
+                    <h3 className="font-medium text-lg border-b pb-2">Upcoming Stays</h3>
+                    <div className="space-y-4">
+                        {upcoming.map(reservation => (
+                            <ReservationCard
+                                key={reservation.reservationId}
+                                reservation={reservation}
+                                showModifyButton={true}
+                                showBillButton={false}
                             />
                         ))}
                     </div>

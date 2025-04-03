@@ -103,12 +103,7 @@ export default function ReservationCard({
 
     // Get status label
     const getStatusLabel = () => {
-        const today = new Date().toISOString().split('T')[0];
-
-        if (reservation.status === 'Cancelled') return 'Cancelled';
-        if (reservation.checkOutDate < today) return 'Completed';
-        if (reservation.checkInDate <= today && reservation.checkOutDate >= today) return 'Active';
-        return 'Upcoming';
+        return reservation.status;
     };
 
     // Get status color
