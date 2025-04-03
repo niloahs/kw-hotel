@@ -3,33 +3,33 @@
  * @param cardNumber - The credit card number to validate
  * @returns boolean indicating if the card number is valid
  */
-export function validateLuhn(cardNumber: string): boolean {
-    // Remove all spaces and non-digit characters
-    const cleanNumber = cardNumber.replace(/\D/g, '');
-    
-    // Check if the number is empty or not a number
-    if (!cleanNumber || isNaN(Number(cleanNumber))) {
-        return false;
-    }
-
-    // Convert to array of numbers
-    const digits = cleanNumber.split('').map(Number);
-    
-    // Double every second digit from the right
-    for (let i = digits.length - 2; i >= 0; i -= 2) {
-        digits[i] *= 2;
-        // If the result is greater than 9, subtract 9
-        if (digits[i] > 9) {
-            digits[i] -= 9;
-        }
-    }
-    
-    // Sum all digits
-    const sum = digits.reduce((acc, digit) => acc + digit, 0);
-    
-    // Check if the sum is divisible by 10
-    return sum % 10 === 0;
-}
+// export function validateLuhn(cardNumber: string): boolean {
+//     // Remove all spaces and non-digit characters
+//     const cleanNumber = cardNumber.replace(/\D/g, '');
+//
+//     // Check if the number is empty or not a number
+//     if (!cleanNumber || isNaN(Number(cleanNumber))) {
+//         return false;
+//     }
+//
+//     // Convert to array of numbers
+//     const digits = cleanNumber.split('').map(Number);
+//
+//     // Double every second digit from the right
+//     for (let i = digits.length - 2; i >= 0; i -= 2) {
+//         digits[i] *= 2;
+//         // If the result is greater than 9, subtract 9
+//         if (digits[i] > 9) {
+//             digits[i] -= 9;
+//         }
+//     }
+//
+//     // Sum all digits
+//     const sum = digits.reduce((acc, digit) => acc + digit, 0);
+//
+//     // Check if the sum is divisible by 10
+//     return sum % 10 === 0;
+// }
 
 /**
  * Formats a credit card number with spaces every 4 digits

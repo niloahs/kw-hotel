@@ -88,12 +88,12 @@ export default function ReservationModal({
         }
     };
 
-    // Get status badge style (without hover effects)
+    // Get status badge style
     const getStatusBadgeClass = () => {
         if (isPending) return "bg-amber-100 text-amber-800 hover:bg-amber-100 hover:text-amber-800";
-        if (reservation.status === 'Confirmed') return "bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800";
+        if (reservation.status === 'Upcoming') return "bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800";
         if (reservation.status === 'Cancelled') return "bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800";
-        if (reservation.status === 'CheckedIn') return "bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800";
+        if (reservation.status === 'Active') return "bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800";
         return "bg-gray-100 text-gray-800 hover:bg-gray-100 hover:text-gray-800";
     };
 
@@ -180,8 +180,8 @@ export default function ReservationModal({
                                     This reservation has a
                                     pending
                                     {reservation.changeType === 'DateChange'
-                                        ? 'date change'
-                                        : 'cancellation'}
+                                        ? ' date change '
+                                        : ' cancellation '}
                                     request that requires your review.
                                 </p>
                             </div>

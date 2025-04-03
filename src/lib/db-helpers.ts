@@ -1,5 +1,5 @@
 import db from './db';
-import { Room, RoomType, Reservation, UserReservation, Service, ServiceCharge } from '@/types';
+import { Reservation, Room, RoomType, Service, UserReservation } from '@/types';
 
 // Helper function to get available rooms
 export async function getAvailableRooms(checkIn: string, checkOut: string): Promise<Room[]> {
@@ -23,7 +23,7 @@ export async function getAvailableRooms(checkIn: string, checkOut: string): Prom
         WHERE r.status = 'Available'
           AND r.room_id NOT IN (SELECT res.room_id
                                 FROM reservation res
-                                WHERE res.status IN ('Confirmed', 'CheckedIn')
+                                WHERE res.status IN ('Upcoming', 'Active')
                                   AND (
                                     (res.check_in_date <= $1 AND res.check_out_date > $1)
                                         OR (res.check_in_date < $2 AND res.check_out_date >= $2)
@@ -94,7 +94,8 @@ export async function getUserReservations(userId: number): Promise<Reservation[]
         FROM reservation r
                  JOIN room rm ON r.room_id = rm.room_id
                  JOIN room_type rt ON rm.room_type_id = rt.room_type_id
-        WHERE r.guest_id = $1 AND r.is_claimed = TRUE
+        WHERE r.guest_id = $1
+          AND r.is_claimed = TRUE
         ORDER BY r.check_in_date DESC
     `, [userId]);
 
@@ -118,21 +119,55 @@ export async function getAllReservations(): Promise<UserReservation[]> {
                r.is_claimed,
                g.first_name || ' ' || g.last_name as guest_name,
                rm.room_number,
-               rt.type_name as room_type,
+               rt.type_name                       as room_type,
                rc.request_status,
-               rc.change_type as change_type
+               rc.change_type                     as change_type
         FROM reservation r
                  JOIN guest g ON r.guest_id = g.guest_id
                  JOIN room rm ON r.room_id = rm.room_id
                  JOIN room_type rt ON rm.room_type_id = rt.room_type_id
                  LEFT JOIN reservation_change rc ON r.reservation_id = rc.reservation_id
-        ORDER BY
-            CASE WHEN rc.request_status = 'Pending' THEN 0 ELSE 1 END,
-            r.check_in_date DESC
+        ORDER BY CASE WHEN rc.request_status = 'Pending' THEN 0 ELSE 1 END,
+                 r.check_in_date DESC
     `);
 
     return result;
 }
+
+
+export async function updateReservationStatuses(): Promise<void> {
+    try {
+        // Update to Active when check-in date has arrived
+        await db.query(`
+            UPDATE reservation
+            SET status = 'Active'
+            WHERE check_in_date <= CURRENT_DATE
+              AND check_out_date > CURRENT_DATE
+              AND status = 'Upcoming'
+        `);
+
+        // Update to Completed when check-out date has passed
+        await db.query(`
+            UPDATE reservation
+            SET status = 'Completed'
+            WHERE check_out_date <= CURRENT_DATE
+              AND status = 'Active'
+        `);
+
+        // Mark rooms as Available for completed reservations
+        await db.query(`
+            UPDATE room r
+            SET status = 'Available'
+            FROM reservation res
+            WHERE r.room_id = res.room_id
+              AND res.status = 'Completed'
+              AND r.status = 'Occupied'
+        `);
+    } catch (error) {
+        console.error(error);
+    }
+}
+
 
 export async function getAllServices(): Promise<Service[]> {
     const result = await db.query(`

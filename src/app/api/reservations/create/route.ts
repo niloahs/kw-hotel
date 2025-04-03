@@ -30,7 +30,7 @@ export async function POST(request: Request) {
                   AND status = 'Available'
                   AND room_id NOT IN (SELECT room_id
                                       FROM reservation
-                                      WHERE status = 'Confirmed'
+                                      WHERE status IN ('Upcoming', 'Active')
                                         AND (
                                           (check_in_date <= $2 AND check_out_date > $2)
                                               OR (check_in_date < $3 AND check_out_date >= $3)
@@ -157,7 +157,7 @@ export async function POST(request: Request) {
             // Generate a unique confirmation code
             const confirmationCode = randomUUID().substring(0, 8).toUpperCase();
 
-            // Create reservation (using a default staff ID for now)
+            // Create reservation
             const staffId = 1;
 
             const reservationResult = await client.query(`
@@ -168,7 +168,8 @@ export async function POST(request: Request) {
                 RETURNING reservation_id, confirmation_code
             `, [
                 guestId, roomId, staffId, checkInDate, checkOutDate,
-                'Confirmed', totalAmount, 'Paid', 'Credit Card', confirmationCode,
+                'Upcoming', totalAmount, 'Paid', 'Credit Card', confirmationCode,
+
                 // Auto-claim if authenticated or creating account
                 userAuthenticated || createAccount
             ]);

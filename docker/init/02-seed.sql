@@ -1,6 +1,6 @@
 -- Insert staff member (hashed pw is 'password123')
 INSERT INTO staff (first_name, last_name, email, password_hash)
-VALUES ('Admin', 'User', 'admin@kingwilliam.com',
+VALUES ('Admin', 'User', 'admin@kingwilliam.ca',
         '$2b$10$WwvblRO9T8olfsxXiuHAvebojqQR0lUDGI644ujtBYiQ6l0vvPoAG');
 
 -- Insert room types
@@ -67,15 +67,13 @@ VALUES
 INSERT INTO seasonal_rate (room_type_id, start_date, end_date, rate_multiplier)
 VALUES (1, '2025-06-01', '2025-09-01', 1.25), -- Singles in summer
        (2, '2025-06-01', '2025-09-01', 1.20), -- Doubles in summer
-       (3, '2025-06-01', '2025-09-01', 1.15);
--- Suites in summer
+       (3, '2025-06-01', '2025-09-01', 1.15); -- Suites in summer
 
 -- Insert seasonal rates (winter holiday period)
 INSERT INTO seasonal_rate (room_type_id, start_date, end_date, rate_multiplier)
 VALUES (1, '2025-12-15', '2026-01-05', 1.30), -- Singles during holidays
        (2, '2025-12-15', '2026-01-05', 1.25), -- Doubles during holidays
-       (3, '2025-12-15', '2026-01-05', 1.20);
--- Suites during holidays
+       (3, '2025-12-15', '2026-01-05', 1.20); -- Suites during holidays
 
 -- Insert services
 INSERT INTO service (service_name, base_price, is_external)

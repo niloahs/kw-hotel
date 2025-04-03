@@ -53,8 +53,11 @@ export default function RoomList() {
 
         const fetchAvailableRooms = async () => {
             try {
+                await axios.post('/api/reservations/update-reservations/');
+
                 // Fetch room types
-                const roomTypesResponse = await axios.get<RoomType[]>('/api/rooms/types');
+                const roomTypesResponse = await
+                    axios.get<RoomType[]>('/api/rooms/types');
                 setRoomTypes(roomTypesResponse.data);
 
                 // Fetch available rooms

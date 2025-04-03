@@ -19,6 +19,7 @@ export default function AllReservationsContent() {
     const fetchReservations = async () => {
         try {
             setLoading(true);
+            await axios.post('/api/reservations/update-reservations/');
             const response = await axios.get('/api/reservations/all');
             setReservations(response.data);
             setError('');
@@ -53,18 +54,20 @@ export default function AllReservationsContent() {
     };
 
     const pendingReservations = reservations.filter((reservation) => reservation.requestStatus === 'Pending');
-    const confirmedReservations = reservations.filter((reservation) => reservation.status === 'Confirmed' && reservation.requestStatus !== 'Pending');
+    const confirmedReservations = reservations.filter((reservation) => reservation.status === 'Active' && reservation.requestStatus !== 'Pending');
 
     // Reusable reservation card component
-    const ReservationCard = ({ reservation }: { reservation: UserReservation }) => (
+    const ReservationCard = ({reservation}: { reservation: UserReservation }) => (
         <Card
             key={reservation.reservationId}
             className="border shadow-lg rounded-lg overflow-hidden cursor-pointer hover:border-primary transition-colors"
             onClick={() => openModal(reservation)}
         >
-            <CardHeader className={`p-4 ${reservation.requestStatus === 'Pending' ? 'bg-amber-50' : 'bg-gray-100'}`}>
+            <CardHeader
+                className={`p-4 ${reservation.requestStatus === 'Pending' ? 'bg-amber-50' : 'bg-gray-100'}`}>
                 <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg font-bold text-gray-800">{reservation.guestName}</CardTitle>
+                    <CardTitle
+                        className="text-lg font-bold text-gray-800">{reservation.guestName}</CardTitle>
                     {reservation.requestStatus === 'Pending' && (
                         <Badge className="bg-amber-100 text-amber-800 border-amber-200">
                             Pending
@@ -72,7 +75,8 @@ export default function AllReservationsContent() {
                     )}
                 </div>
                 <CardDescription className="text-sm text-gray-600">
-                    Room: <span className="font-medium">{reservation.roomNumber} - {reservation.roomType}</span>
+                    Room: <span
+                    className="font-medium">{reservation.roomNumber} - {reservation.roomType}</span>
                 </CardDescription>
             </CardHeader>
             <CardContent className="p-4">
@@ -87,10 +91,12 @@ export default function AllReservationsContent() {
                         )}
                     </p>
                     <p className="text-sm text-gray-600">
-                        <span className="font-semibold">Check-in:</span> {format(new Date(reservation.checkInDate), 'MMM d, yyyy')}
+                        <span
+                            className="font-semibold">Check-in:</span> {format(new Date(reservation.checkInDate), 'MMM d, yyyy')}
                     </p>
                     <p className="text-sm text-gray-600">
-                        <span className="font-semibold">Check-out:</span> {format(new Date(reservation.checkOutDate), 'MMM d, yyyy')}
+                        <span
+                            className="font-semibold">Check-out:</span> {format(new Date(reservation.checkOutDate), 'MMM d, yyyy')}
                     </p>
                     <p className="text-sm text-gray-600">
                         <span className="font-semibold">Total:</span> ${reservation.totalAmount}
@@ -100,7 +106,7 @@ export default function AllReservationsContent() {
         </Card>
     );
 
-    const ReservationGrid = ({ reservations }: { reservations: UserReservation[] }) => (
+    const ReservationGrid = ({reservations}: { reservations: UserReservation[] }) => (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {reservations.length > 0 ? (
                 reservations.map((reservation) => (
@@ -132,7 +138,8 @@ export default function AllReservationsContent() {
                     <TabsTrigger value="pending">
                         Pending
                         {pendingReservations.length > 0 && (
-                            <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                            <span
+                                className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
                                 {pendingReservations.length}
                             </span>
                         )}

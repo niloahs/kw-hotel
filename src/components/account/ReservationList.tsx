@@ -17,6 +17,8 @@ export default function ReservationList() {
     const fetchReservations = async () => {
         try {
             setLoading(true);
+            await axios.post('/api/reservations/update-reservations/');
+
             const response = await axios.get('/api/reservations/user');
 
             // Sort reservations by date (newest check-in first)
@@ -41,11 +43,12 @@ export default function ReservationList() {
     const today = new Date().toISOString().split('T')[0];
 
     const active = reservations.filter(r =>
-        r.status === 'Confirmed' && r.checkOutDate >= today
+        (r.status === 'Active' || r.status === 'Upcoming') &&
+        new Date(r.checkOutDate) >= new Date(today)
     );
 
     const past = reservations.filter(r =>
-        r.status === 'Confirmed' && r.checkOutDate < today
+        r.status === 'Completed'
     );
 
     const cancelled = reservations.filter(r =>
@@ -79,6 +82,7 @@ export default function ReservationList() {
                                 key={reservation.reservationId}
                                 reservation={reservation}
                                 showModifyButton={true}
+                                showBillButton={true}
                             />
                         ))}
                     </div>
@@ -96,6 +100,7 @@ export default function ReservationList() {
                                 reservation={reservation}
                                 showModifyButton={false}
                                 showFavoriteButton={true}
+                                showBillButton={true}
                             />
                         ))}
                     </div>

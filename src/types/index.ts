@@ -41,7 +41,7 @@ export interface Reservation {
     staffId: number;
     checkInDate: string;
     checkOutDate: string;
-    status: 'Confirmed' | 'Pending' | 'Cancelled' | 'CheckedIn' | 'CheckedOut';
+    status: 'Upcoming' | 'Active' | 'Completed' | 'Cancelled';
     totalAmount: number;
     paymentStatus: 'Paid' | 'Unpaid';
     paymentMethod: string;
@@ -69,12 +69,23 @@ export interface Service {
   }
 
 export interface ServiceCharge {
+    serviceChargeId: number;
     serviceId: number;
     reservationId: number;
     quantity: number;
     chargedAmount: number;
     chargeDate: string;
     serviceName?: string;
+}
+
+export interface BillDetail {
+    reservation: Reservation;
+    nights: number;
+    nightlyRate: number;
+    roomTotal: number;
+    serviceCharges: ServiceCharge[];
+    serviceChargeTotal: number;
+    billTotal: number;
 }
 
 // Auth Types

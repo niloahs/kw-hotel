@@ -91,10 +91,7 @@ CREATE TABLE reservation
     staff_id          INTEGER        NOT NULL REFERENCES staff (staff_id) ON DELETE RESTRICT,
     check_in_date     DATE           NOT NULL,
     check_out_date    DATE           NOT NULL,
-    status            VARCHAR(15)    NOT NULL CHECK (status IN
-                                                     ('Confirmed', 'Pending', 'Cancelled',
-                                                      'CheckedIn',
-                                                      'CheckedOut')),
+    status            VARCHAR(15)    NOT NULL CHECK (status IN ('Upcoming', 'Active', 'Completed', 'Cancelled')),
     total_amount      DECIMAL(10, 2) NOT NULL CHECK (total_amount >= 0),
     payment_status    VARCHAR(10)    NOT NULL CHECK (payment_status IN ('Paid', 'Unpaid')),
     payment_method    VARCHAR(12)    NOT NULL CHECK (payment_method IN

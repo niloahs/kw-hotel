@@ -10,22 +10,26 @@ import { Reservation } from '@/types';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, Star } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import BillDetailModal from "@/components/modals/BillDetailModal";
 
 interface ReservationCardProps {
     reservation: Reservation;
     showModifyButton?: boolean;
     showFavoriteButton?: boolean;
+    showBillButton?: boolean;
 }
 
 export default function ReservationCard({
                                             reservation,
                                             showModifyButton = false,
                                             showFavoriteButton = false,
+                                            showBillButton = false
                                         }: ReservationCardProps) {
     const router = useRouter();
     const [isFavorite, setIsFavorite] = useState(false);
     const [roomTypeId, setRoomTypeId] = useState<number | null>(null);
     const [hasPendingRequest, setHasPendingRequest] = useState(false);
+    const [isBillModalOpen, setIsBillModalOpen] = useState(false);
 
     // Get room type ID from roomId if we need favorites functionality
     useEffect(() => {
@@ -169,14 +173,15 @@ export default function ReservationCard({
                     </div>
                 </div>
 
-                {showModifyButton && (
+                {(showModifyButton || showBillButton) && (
                     <div className="mt-4 pt-4 border-t">
-                        {hasPendingRequest ? (
+                        {hasPendingRequest && showModifyButton ? (
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <div className="flex items-center text-amber-600 text-sm">
-                                            <AlertCircle className="w-4 h-4 mr-1" />
+                                        <div
+                                            className="flex items-center text-amber-600 text-sm mb-3">
+                                            <AlertCircle className="w-4 h-4 mr-1 mb-2" />
                                             Request pending approval
                                         </div>
                                     </TooltipTrigger>
@@ -186,17 +191,39 @@ export default function ReservationCard({
                                 </Tooltip>
                             </TooltipProvider>
                         ) : (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => router.push(`/reservations/modify/${reservation.reservationId}`)}
-                            >
-                                Request Changes
-                            </Button>
+                            <div className="flex gap-2">
+                                {showModifyButton && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => router.push(`/reservations/modify/${reservation.reservationId}`)}
+                                    >
+                                        Request Changes
+                                    </Button>
+                                )}
+
+                                {showBillButton && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsBillModalOpen(true);
+                                        }}
+                                    >
+                                        View Bill
+                                    </Button>
+                                )}
+                            </div>
                         )}
                     </div>
                 )}
             </CardContent>
+            <BillDetailModal
+                isOpen={isBillModalOpen}
+                onClose={() => setIsBillModalOpen(false)}
+                reservationId={reservation.reservationId}
+            />
         </Card>
     );
 }
