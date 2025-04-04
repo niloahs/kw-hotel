@@ -1,76 +1,132 @@
-# King William Hotel
+# King William Hotel Reservation System
 
-This is a [Next.js](https://nextjs.org) project bootstrapped
-with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+A full-stack web application for hotel reservations and management. This project provides both 
+customer-facing features for booking rooms and a staff portal for managing reservations.
+
+## Features
+
+### Customer Features
+- Browse available rooms with real-time availability checking
+- Book rooms with date selection
+- Add optional services to reservations
+- Create accounts to manage reservations
+- View and modify existing reservations
+- View guest bills
+
+### Staff Features
+- Overview of current occupancy metrics
+- Review and approve/reject modification requests
+- View all reservations and their statuses
+- Analytics for room type popularity and service usage
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- Docker Desktop 
+- Git
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/niloahs/kw-hotel.git
+   cd kw-hotel
+   ```
+
+2. **Ensure Docker is running**
+ 
+3. **Start the PostgreSQL database with Docker**
+
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Set up environment variables**
+   Create a `.env` file in the root directory with the following variables:
+   ```
+    DATABASE_URL=postgres://postgres:password@localhost:5433/kingwilliam
+    NEXTAUTH_URL=http://localhost:3000
+    NEXTAUTH_SECRET=123
+   ```
+
+5. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+6. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+7. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000) to see the application.
+
+### Database Setup
+
+The Docker Compose configuration will automatically:
+- Create a PostgreSQL 15 database with the correct schema on port 5433
+- Seed initial data including:
+    - Staff login (admin@kingwilliam.ca / password123)
+    - Room types and rooms
+    - Seasonal rate configurations
+    - Available services
+
+### Useful Database Commands
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Connect to the database using psql
+docker exec -it kw-hotel-db psql -U postgres -d kingwilliam
+
+# View database logs
+docker-compose logs -f db
+
+# Stop the database
+docker-compose stop
+
+# Restart the database
+docker-compose restart
+
+# Remove database (deletes all data)
+docker-compose down -v
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Usage
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the
-file.
+### Customer Flow
 
-This project
-uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to
-automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Browse the hotel website to view rooms
+2. Select dates and search for available rooms
+3. Choose a room and complete the reservation form
+4. Add optional services
+5. Receive a confirmation code (if account wasn't created)
+6. Create or log into an account to view/modify reservations
 
-## Local Database Setup
+### Staff Flow
 
-This project requires a PostgreSQL database, so can set that up easily with Docker:
+1. Login with staff credentials (admin@kingwilliam.ca / password123)
+2. Access the staff dashboard to view analytics
+3. View all reservations
+4. Approve or reject modification requests
 
-```bash
-# Start the Postgres database with schema and sample data
-docker-compose up -d
-```
+## Project Structure
 
-Environment setup:
+- `/src/app` - Page components and API routes
+- `/src/components` - Reusable UI components
+- `/src/lib` - Utility functions and database helpers
+- `/src/types` - TypeScript type definitions
+- `/docker` - Docker configuration and database initialization scripts
 
-```bash
-# Create and add this to your .env file
-DATABASE_URL=postgres://postgres:password@localhost:5433/kingwilliam
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=secret
-````
+## Troubleshooting
 
-Quick commands:
+**Database Connection Issues**
+- Ensure Docker is running
+- Check that port 5433 is not in use
+- Verify your DATABASE_URL in the .env file
+- Make sure only one PostgreSQL service is running
 
-```bash
-docker-compose logs -f db  # View database logs
-docker-compose stop        # Stop the database
-docker-compose restart     # Restart the database
-docker-compose down -v     # Remove completely (deletes all data)
-```
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback
-and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use
-the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme)
-from the creators of Next.js.
-
-Check out
-our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying)
-for more details.
-
-```
+**Authentication Problems**
+- Make sure NEXTAUTH_SECRET is set
+- Check that NEXTAUTH_URL matches your development URL
